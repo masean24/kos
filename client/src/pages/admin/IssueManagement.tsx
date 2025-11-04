@@ -104,7 +104,8 @@ export default function IssueManagement() {
             ) : issues && issues.length > 0 ? (
               <div className="space-y-4">
                 {issues.map((issue) => (
-                  <div key={issue.id} className="border rounded-lg p-4 space-y-3">
+                  <Card key={issue.id}>
+                    <CardContent className="pt-6 space-y-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{issue.judul}</h3>
@@ -113,7 +114,7 @@ export default function IssueManagement() {
                       {getStatusBadge(issue.status)}
                     </div>
                     
-                    <div className="flex gap-4 text-xs text-muted-foreground">
+                    <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-4 text-xs text-muted-foreground">
                       <span>User ID: {issue.userId}</span>
                       {issue.kamarId && <span>Kamar ID: {issue.kamarId}</span>}
                       <span>Prioritas: {getPrioritasLabel(issue.prioritas)}</span>
@@ -123,7 +124,7 @@ export default function IssueManagement() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <span className="text-sm font-medium">Update Status:</span>
                       <Select
                         value={issue.status}
@@ -140,12 +141,15 @@ export default function IssueManagement() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                Belum ada laporan masalah
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lg font-medium text-foreground mb-2">Belum ada laporan</p>
+                <p className="text-sm text-muted-foreground">Belum ada laporan masalah dari penghuni</p>
               </div>
             )}
           </CardContent>

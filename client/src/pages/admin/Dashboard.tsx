@@ -215,28 +215,30 @@ export default function AdminDashboard() {
                 <CardTitle>Quick Actions</CardTitle>
                 <CardDescription>Akses cepat ke fitur utama</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
-                <Button onClick={() => setLocation("/admin/rooms")}>
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Kelola Kamar
-                </Button>
-                <Button onClick={() => setLocation("/admin/tenants")} variant="outline">
-                  <Users className="mr-2 h-4 w-4" />
-                  Lihat Penghuni
-                </Button>
-                <Button onClick={() => setLocation("/admin/invoices")} variant="outline">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Kelola Invoice
-                </Button>
-                <Button variant="outline" onClick={() => setLocation("/admin/issues")} className="relative">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Kelola Laporan
-                  {notifications && notifications.openIssues > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {notifications.openIssues}
-                    </span>
-                  )}
-                </Button>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <Button onClick={() => setLocation("/admin/rooms")} size="lg" className="h-auto py-4 flex-col gap-2">
+                    <Building2 className="h-6 w-6" />
+                    <span>Kelola Kamar</span>
+                  </Button>
+                  <Button onClick={() => setLocation("/admin/tenants")} variant="outline" size="lg" className="h-auto py-4 flex-col gap-2">
+                    <Users className="h-6 w-6" />
+                    <span>Lihat Penghuni</span>
+                  </Button>
+                  <Button onClick={() => setLocation("/admin/invoices")} variant="outline" size="lg" className="h-auto py-4 flex-col gap-2">
+                    <FileText className="h-6 w-6" />
+                    <span>Kelola Invoice</span>
+                  </Button>
+                  <Button variant="outline" onClick={() => setLocation("/admin/issues")} size="lg" className="h-auto py-4 flex-col gap-2 relative">
+                    <AlertCircle className="h-6 w-6" />
+                    <span>Kelola Laporan</span>
+                    {notifications && notifications.openIssues > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {notifications.openIssues}
+                      </span>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
