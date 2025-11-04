@@ -1,20 +1,49 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Loader2, ArrowLeft, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function PaymentStatus() {
   const { user, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [rejectInvoiceId, setRejectInvoiceId] = useState<number | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
+  const utils = trpc.useUtils();
   const { data: invoices, isLoading } = trpc.invoice.list.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
+  });
+
+  const approveMutation = trpc.invoice.approvePayment.useMutation({
+    onSuccess: () => {
+      utils.invoice.list.invalidate();
+      toast.success("Pembayaran berhasil disetujui");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const rejectMutation = trpc.invoice.rejectPayment.useMutation({
+    onSuccess: () => {
+      utils.invoice.list.invalidate();
+      setRejectInvoiceId(null);
+      setRejectionReason("");
+      toast.success("Pembayaran ditolak");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
   useEffect(() => {
@@ -25,6 +54,42 @@ export default function PaymentStatus() {
     }
   }, [user, authLoading, setLocation]);
 
+  const handleApprove = (invoiceId: number) => {
+    if (confirm("Setujui pembayaran ini?")) {
+      approveMutation.mutate({ invoiceId });
+    }
+  };
+
+  const handleReject = () => {
+    if (!rejectionReason.trim()) {
+      toast.error("Mohon berikan alasan penolakan");
+      return;
+    }
+    if (rejectInvoiceId) {
+      rejectMutation.mutate({
+        invoiceId: rejectInvoiceId,
+        reason: rejectionReason,
+      });
+    }
+  };
+
+  const getStatusBadge = (inv: any) => {
+    if (inv.status === "paid") {
+      return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Lunas</Badge>;
+    }
+    
+    if (inv.paymentMethod === "manual") {
+      if (inv.approvalStatus === "pending") {
+        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Menunggu Verifikasi</Badge>;
+      }
+      if (inv.approvalStatus === "rejected") {
+        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Ditolak</Badge>;
+      }
+    }
+    
+    return <Badge variant="secondary">Belum Bayar</Badge>;
+  };
+
   if (authLoading || !user || user.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -32,21 +97,6 @@ export default function PaymentStatus() {
       </div>
     );
   }
-
-  // Group invoices by user
-  const invoicesByUser = invoices?.reduce((acc, inv) => {
-    if (!acc[inv.userId]) {
-      acc[inv.userId] = [];
-    }
-    acc[inv.userId].push(inv);
-    return acc;
-  }, {} as Record<number, typeof invoices>);
-
-  const pendingCount = invoices?.filter((i) => i.status === "pending").length || 0;
-  const paidCount = invoices?.filter((i) => i.status === "paid").length || 0;
-  const totalRevenue = invoices
-    ?.filter((i) => i.status === "paid")
-    .reduce((sum, i) => sum + i.jumlahTagihan, 0) || 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,49 +114,10 @@ export default function PaymentStatus() {
         </div>
       </header>
 
-      <main className="container py-8 space-y-6">
-        {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Invoice</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{invoices?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Semua invoice</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <XCircle className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
-              <p className="text-xs text-muted-foreground">Belum dibayar</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Lunas</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{paidCount}</div>
-              <p className="text-xs text-muted-foreground">
-                Total: Rp {totalRevenue.toLocaleString("id-ID")}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Payment Status Table */}
+      <main className="container py-8">
         <Card>
           <CardHeader>
-            <CardTitle>Daftar Pembayaran Semua Penghuni</CardTitle>
+            <CardTitle>Daftar Pembayaran</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -123,7 +134,7 @@ export default function PaymentStatus() {
                     <TableHead>Jumlah</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Jatuh Tempo</TableHead>
-                    <TableHead>Dibayar</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -138,18 +149,40 @@ export default function PaymentStatus() {
                       <TableCell>{inv.kamarId}</TableCell>
                       <TableCell>{inv.bulan}</TableCell>
                       <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>
-                      <TableCell>
-                        <Badge variant={inv.status === "paid" ? "default" : "secondary"}>
-                          {inv.status === "paid" ? "Lunas" : "Pending"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}
-                      </TableCell>
-                      <TableCell>
-                        {inv.tanggalDibayar
-                          ? new Date(inv.tanggalDibayar).toLocaleDateString("id-ID")
-                          : "-"}
+                      <TableCell>{getStatusBadge(inv)}</TableCell>
+                      <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
+                      <TableCell className="text-right">
+                        {inv.paymentMethod === "manual" && inv.approvalStatus === "pending" && inv.paymentProof && (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(inv.paymentProof!, '_blank')}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Lihat Bukti
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleApprove(inv.id)}
+                              disabled={approveMutation.isPending}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Setujui
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setRejectInvoiceId(inv.id)}
+                              disabled={rejectMutation.isPending}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Tolak
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -163,40 +196,40 @@ export default function PaymentStatus() {
           </CardContent>
         </Card>
 
-        {/* Payment by User */}
-        {invoicesByUser && Object.keys(invoicesByUser).length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Ringkasan per Penghuni</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(invoicesByUser).map(([userId, userInvoices]) => {
-                  const pending = userInvoices.filter((i) => i.status === "pending").length;
-                  const paid = userInvoices.filter((i) => i.status === "paid").length;
-                  const totalPaid = userInvoices
-                    .filter((i) => i.status === "paid")
-                    .reduce((sum, i) => sum + i.jumlahTagihan, 0);
-
-                  return (
-                    <div key={userId} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-semibold">User ID: {userId}</h3>
-                        <div className="flex gap-2">
-                          <Badge variant="secondary">{pending} Pending</Badge>
-                          <Badge variant="default">{paid} Lunas</Badge>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Total dibayar: Rp {totalPaid.toLocaleString("id-ID")}
-                      </p>
-                    </div>
-                  );
-                })}
+        {/* Reject Dialog */}
+        <Dialog open={!!rejectInvoiceId} onOpenChange={() => setRejectInvoiceId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tolak Pembayaran</DialogTitle>
+              <DialogDescription>
+                Berikan alasan penolakan pembayaran
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="reason">Alasan Penolakan</Label>
+                <Textarea
+                  id="reason"
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Contoh: Bukti transfer tidak jelas, nominal tidak sesuai, dll"
+                  rows={4}
+                />
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectInvoiceId(null)}>
+                Batal
+              </Button>
+              <Button variant="destructive" onClick={handleReject} disabled={rejectMutation.isPending}>
+                {rejectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Tolak Pembayaran
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

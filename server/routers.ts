@@ -5,6 +5,9 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
+import { getDb } from "./db";
+import { invoice } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 import { createXenditInvoice, XenditCallbackPayload } from "./xendit";
 import { sendPaymentReminder, getWhatsAppStatus } from "./whatsapp";
 
@@ -272,6 +275,67 @@ export const appRouter = router({
         return { success: true, count: generated.length, invoices: generated };
       }),
 
+    uploadPaymentProof: protectedProcedure
+      .input(z.object({
+        invoiceId: z.number(),
+        proofUrl: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const dbInstance = await getDb();
+        if (!dbInstance) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        // Verify invoice belongs to user
+        const inv = await db.getInvoiceById(input.invoiceId);
+        if (!inv || inv.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        
+        await dbInstance.update(invoice).set({
+          paymentProof: input.proofUrl,
+          paymentMethod: "manual",
+          approvalStatus: "pending",
+        }).where(eq(invoice.id, input.invoiceId));
+        
+        return { success: true, message: "Bukti pembayaran berhasil diupload" };
+      }),
+    
+    approvePayment: adminProcedure
+      .input(z.object({
+        invoiceId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const dbInstance = await getDb();
+        if (!dbInstance) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        await dbInstance.update(invoice).set({
+          status: "paid",
+          approvalStatus: "approved",
+          approvedBy: ctx.user.id,
+          approvedAt: new Date(),
+          tanggalDibayar: new Date(),
+        }).where(eq(invoice.id, input.invoiceId));
+        
+        return { success: true, message: "Pembayaran telah disetujui" };
+      }),
+    
+    rejectPayment: adminProcedure
+      .input(z.object({
+        invoiceId: z.number(),
+        reason: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbInstance = await getDb();
+        if (!dbInstance) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        await dbInstance.update(invoice).set({
+          approvalStatus: "rejected",
+          rejectionReason: input.reason,
+          paymentProof: null,
+        }).where(eq(invoice.id, input.invoiceId));
+        
+        return { success: true, message: "Pembayaran ditolak" };
+      }),
+    
     updateStatus: adminProcedure
       .input(z.object({
         id: z.number(),
@@ -520,6 +584,20 @@ export const appRouter = router({
         return chartData;
       }),
   }),
+
+  // ===== FILE UPLOAD =====
+  upload: protectedProcedure
+    .input(z.object({
+      key: z.string(),
+      data: z.string(),
+      contentType: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { storagePut } = await import("./storage");
+      const buffer = Buffer.from(input.data, 'base64');
+      const result = await storagePut(input.key, buffer, input.contentType);
+      return result;
+    }),
 });
 
 export type AppRouter = typeof appRouter;

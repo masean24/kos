@@ -15,6 +15,7 @@ import TenantDashboard from "./pages/tenant/Dashboard";
 import TenantRegister from "./pages/tenant/Register";
 import TenantReportIssue from "./pages/tenant/ReportIssue";
 import TenantInvoices from "./pages/tenant/Invoices";
+import TenantPayments from "./pages/tenant/Payments";
 
 function Router() {
   return (
@@ -33,7 +34,8 @@ function Router() {
         <Route path="/tenant" component={TenantDashboard} />
       <Route path="/tenant/register" component={TenantRegister} />
       <Route path="/tenant/report" component={TenantReportIssue} />
-      <Route path="/tenant/invoices" component={TenantInvoices} />      
+      <Route path="/tenant/invoices" component={TenantInvoices} />
+      <Route path="/tenant/payments" component={TenantPayments} />      
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

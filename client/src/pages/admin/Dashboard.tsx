@@ -8,7 +8,7 @@ import { getLoginUrl } from "@/const";
 import { useEffect } from "react";
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
@@ -47,6 +47,9 @@ export default function AdminDashboard() {
             </Button>
             <Button variant="outline" onClick={() => setLocation("/admin/invoices")}>
               Kelola Invoice
+            </Button>
+            <Button variant="outline" onClick={() => logout()}>
+              Logout
             </Button>
           </div>
         </div>

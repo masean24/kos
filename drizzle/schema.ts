@@ -71,6 +71,12 @@ export const invoice = mysqlTable("invoice", {
   xenditInvoiceUrl: text("xenditInvoiceUrl"),
   tanggalJatuhTempo: timestamp("tanggalJatuhTempo").notNull(),
   tanggalDibayar: timestamp("tanggalDibayar"),
+  paymentProof: text("paymentProof"),
+  paymentMethod: mysqlEnum("paymentMethod", ["xendit", "manual"]).default("xendit"),
+  approvalStatus: mysqlEnum("approvalStatus", ["pending", "approved", "rejected"]),
+  approvedBy: int("approvedBy"),
+  approvedAt: timestamp("approvedAt"),
+  rejectionReason: text("rejectionReason"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

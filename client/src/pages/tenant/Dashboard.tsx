@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Loader2, FileText, User, Home, AlertCircle } from "lucide-react";
+import { Loader2, FileText, User, Home, AlertCircle, CreditCard } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect } from "react";
@@ -138,22 +138,27 @@ export default function TenantDashboard() {
                       </div>
                     </div>
                   ))}
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       variant="outline"
-                      className="flex-1"
-                      onClick={() => setLocation("/tenant/invoices")}
+                      onClick={() => setLocation("/tenant/payments")}
                     >
-                      <FileText className="mr-2 h-4 w-4" />
-                      Lihat Semua Invoice
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Pembayaran
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      onClick={() => setLocation("/tenant/invoices")}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Invoice
+                    </Button>
+                    <Button
+                      variant="outline"
                       onClick={() => setLocation("/tenant/report")}
                     >
                       <AlertCircle className="mr-2 h-4 w-4" />
-                      Lapor Masalah
+                      Lapor
                     </Button>
                   </div>
                 </div>

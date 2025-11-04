@@ -178,6 +178,12 @@ export async function getAllInvoices() {
       updatedAt: invoice.updatedAt,
       tenantName: users.name,
       tenantEmail: users.email,
+      paymentProof: invoice.paymentProof,
+      paymentMethod: invoice.paymentMethod,
+      approvalStatus: invoice.approvalStatus,
+      approvedBy: invoice.approvedBy,
+      approvedAt: invoice.approvedAt,
+      rejectionReason: invoice.rejectionReason,
     })
     .from(invoice)
     .leftJoin(users, eq(invoice.userId, users.id))
@@ -206,6 +212,12 @@ export async function getInvoicesByUserId(userId: number) {
       updatedAt: invoice.updatedAt,
       tenantName: users.name,
       tenantEmail: users.email,
+      paymentProof: invoice.paymentProof,
+      paymentMethod: invoice.paymentMethod,
+      approvalStatus: invoice.approvalStatus,
+      approvedBy: invoice.approvedBy,
+      approvedAt: invoice.approvedAt,
+      rejectionReason: invoice.rejectionReason,
     })
     .from(invoice)
     .leftJoin(users, eq(invoice.userId, users.id))

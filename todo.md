@@ -83,3 +83,11 @@
 - [x] Fix tenant login system - only allow tenant account creation (documented)
 - [x] Create default admin account automatically (via OWNER_OPEN_ID)
 - [x] Update invoice table to show tenant names
+
+## New Requirements (Manual Payment & Logout)
+- [x] Add payment proof field to invoice table
+- [x] Tenant can upload payment proof for manual payment
+- [x] Admin can approve/reject manual payment
+- [x] Tenant dashboard shows all payment history with status
+- [x] Add logout button to admin pages
+- [x] Add logout button to tenant pages
