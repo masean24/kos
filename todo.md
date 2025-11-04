@@ -130,3 +130,9 @@
 - [x] Fix mobile scroll issue in tenant pages - cannot scroll down
 - [x] Fix payment page errors (added overflow-y-auto)
 - [x] Fix invoice page errors (added overflow-y-auto)
+
+## New Features (User Request)
+- [x] Fix generate invoice dialog layout - improve date input and spacing
+- [x] Add print invoice feature for admin
+- [x] Add print invoice feature for tenant
+- [x] Add CSV export for payment reports (admin)

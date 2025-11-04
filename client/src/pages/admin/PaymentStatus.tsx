@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Loader2, ArrowLeft, CheckCircle, XCircle, Clock, Eye } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, XCircle, Clock, Eye, Download } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
@@ -19,6 +19,37 @@ export default function PaymentStatus() {
   const [rejectInvoiceId, setRejectInvoiceId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+
+  const exportToCSV = () => {
+    if (!invoices || invoices.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const headers = ["Nama Penghuni", "Email", "Bulan", "Jumlah", "Status", "Metode Pembayaran", "Status Approval", "Jatuh Tempo"];
+    const rows = invoices.map((inv: any) => [
+      inv.tenantName || 'N/A',
+      inv.tenantEmail || 'N/A',
+      inv.bulan,
+      inv.jumlahTagihan,
+      inv.status === 'paid' ? 'Lunas' : 'Pending',
+      inv.paymentMethod === 'manual' ? 'Manual' : inv.paymentMethod === 'xendit' ? 'Xendit' : 'N/A',
+      inv.approvalStatus === 'approved' ? 'Disetujui' : inv.approvalStatus === 'rejected' ? 'Ditolak' : inv.approvalStatus === 'pending' ? 'Menunggu' : 'N/A',
+      new Date(inv.tanggalJatuhTempo).toLocaleDateString('id-ID')
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `\"${cell}\"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `payment-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    toast.success("Data berhasil diekspor");
+  };
 
   const utils = trpc.useUtils();
   const { data: invoices, isLoading } = trpc.invoice.list.useQuery(undefined, {
@@ -103,14 +134,20 @@ export default function PaymentStatus() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container py-4">
-          <div className="flex items-center gap-4 mb-2">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/admin")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Review Pembayaran Manual</h1>
-              <p className="text-sm text-muted-foreground">Setujui atau tolak bukti pembayaran dari penghuni</p>
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => setLocation("/admin")}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Review Pembayaran Manual</h1>
+                <p className="text-sm text-muted-foreground">Setujui atau tolak bukti pembayaran dari penghuni</p>
+              </div>
             </div>
+            <Button onClick={exportToCSV} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
         </div>
       </header>

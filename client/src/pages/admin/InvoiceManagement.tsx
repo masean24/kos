@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Plus, CheckCircle, ArrowLeft, MessageCircle } from "lucide-react";
+import { Loader2, Plus, CheckCircle, ArrowLeft, MessageCircle, Printer } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
@@ -18,6 +18,50 @@ export default function InvoiceManagement() {
   const [, setLocation] = useLocation();
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [bulan, setBulan] = useState("");
+
+  const printInvoice = (inv: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice ${inv.bulan}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .invoice-details { margin: 20px 0; }
+          .invoice-details table { width: 100%; border-collapse: collapse; }
+          .invoice-details td { padding: 8px; border-bottom: 1px solid #eee; }
+          .invoice-details td:first-child { font-weight: bold; width: 200px; }
+          .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
+          @media print { button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>INVOICE PEMBAYARAN KOS</h1>
+          <p>Invoice #${inv.id}</p>
+        </div>
+        <div class="invoice-details">
+          <table>
+            <tr><td>Nama Penghuni</td><td>${inv.tenantName || 'N/A'}</td></tr>
+            <tr><td>Email</td><td>${inv.tenantEmail || 'N/A'}</td></tr>
+            <tr><td>Bulan</td><td>${inv.bulan}</td></tr>
+            <tr><td>Tanggal Jatuh Tempo</td><td>${new Date(inv.tanggalJatuhTempo).toLocaleDateString('id-ID')}</td></tr>
+            <tr><td>Status</td><td>${inv.status === 'paid' ? 'LUNAS' : 'BELUM DIBAYAR'}</td></tr>
+          </table>
+          <div class="total">
+            <p>Total: Rp ${inv.jumlahTagihan.toLocaleString('id-ID')}</p>
+          </div>
+        </div>
+        <button onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer;">Cetak</button>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
   const [tanggalJatuhTempo, setTanggalJatuhTempo] = useState("");
 
   const utils = trpc.useUtils();
@@ -117,35 +161,41 @@ export default function InvoiceManagement() {
                   Generate Invoice Bulanan
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Generate Invoice Bulanan</DialogTitle>
                   <DialogDescription>
                     Sistem akan otomatis membuat invoice untuk semua penghuni aktif
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="bulan">Bulan (Format: YYYY-MM)</Label>
+                <div className="space-y-6 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bulan" className="text-sm font-medium">
+                      Bulan (Format: YYYY-MM)
+                    </Label>
                     <Input
                       id="bulan"
                       type="month"
                       value={bulan}
                       onChange={(e) => setBulan(e.target.value)}
                       placeholder="2025-01"
+                      className="w-full"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="tanggalJatuhTempo">Tanggal Jatuh Tempo</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="tanggalJatuhTempo" className="text-sm font-medium">
+                      Tanggal Jatuh Tempo
+                    </Label>
                     <Input
                       id="tanggalJatuhTempo"
                       type="date"
                       value={tanggalJatuhTempo}
                       onChange={(e) => setTanggalJatuhTempo(e.target.value)}
+                      className="w-full"
                     />
                   </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="gap-2 sm:gap-0">
                   <Button variant="outline" onClick={() => setIsGenerateOpen(false)}>
                     Batal
                   </Button>
@@ -192,28 +242,37 @@ export default function InvoiceManagement() {
                       </TableCell>
                       <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
                       <TableCell className="text-right">
-                        {inv.status === "pending" && (
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => sendReminderMutation.mutate({ invoiceId: inv.id })}
-                              disabled={sendReminderMutation.isPending}
-                            >
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              Kirim WA
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleMarkAsPaid(inv.id)}
-                              disabled={updateStatusMutation.isPending}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Tandai Lunas
-                            </Button>
-                          </div>
-                        )}
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => printInvoice(inv)}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          {inv.status === "pending" && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => sendReminderMutation.mutate({ invoiceId: inv.id })}
+                                disabled={sendReminderMutation.isPending}
+                              >
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Kirim WA
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMarkAsPaid(inv.id)}
+                                disabled={updateStatusMutation.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Tandai Lunas
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

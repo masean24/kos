@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, CheckCircle, Clock, Loader2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, Loader2, XCircle, Printer } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect } from "react";
@@ -30,6 +30,48 @@ export default function TenantInvoices() {
       </div>
     );
   }
+
+  const printInvoice = (inv: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice ${inv.bulan}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .invoice-details { margin: 20px 0; }
+          .invoice-details table { width: 100%; border-collapse: collapse; }
+          .invoice-details td { padding: 8px; border-bottom: 1px solid #eee; }
+          .invoice-details td:first-child { font-weight: bold; width: 200px; }
+          .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
+          @media print { button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>INVOICE PEMBAYARAN KOS</h1>
+          <p>Invoice #${inv.id}</p>
+        </div>
+        <div class="invoice-details">
+          <table>
+            <tr><td>Bulan</td><td>${inv.bulan}</td></tr>
+            <tr><td>Tanggal Jatuh Tempo</td><td>${new Date(inv.tanggalJatuhTempo).toLocaleDateString('id-ID')}</td></tr>
+            <tr><td>Status</td><td>${inv.status === 'paid' ? 'LUNAS' : 'BELUM DIBAYAR'}</td></tr>
+          </table>
+          <div class="total">
+            <p>Total: Rp ${inv.jumlahTagihan.toLocaleString('id-ID')}</p>
+          </div>
+        </div>
+        <button onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer;">Cetak</button>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const getStatusBadge = (inv: any) => {
     if (inv.status === "paid") {
@@ -94,14 +136,23 @@ export default function TenantInvoices() {
                       <TableCell>{getStatusBadge(inv)}</TableCell>
                       <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
                       <TableCell className="text-right">
-                        {inv.status !== "paid" && (
-                          <Button 
-                            size="sm" 
-                            onClick={() => setLocation(`/tenant/payments?invoice=${inv.id}`)}
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => printInvoice(inv)}
                           >
-                            Bayar
+                            <Printer className="h-4 w-4" />
                           </Button>
-                        )}
+                          {inv.status !== "paid" && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => setLocation(`/tenant/payments?invoice=${inv.id}`)}
+                            >
+                              Bayar
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
