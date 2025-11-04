@@ -117,10 +117,9 @@ export default function PaymentStatus() {
 
       <main className="container py-8">
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Daftar Pembayaran Manual</CardTitle>
-              <div className="flex gap-2">
+          <CardHeader className="space-y-4">
+            <CardTitle>Daftar Pembayaran Manual</CardTitle>
+            <div className="flex flex-wrap gap-2">
                 <Button 
                   variant={filter === 'pending' ? 'default' : 'outline'} 
                   size="sm"
@@ -153,7 +152,6 @@ export default function PaymentStatus() {
                   Semua
                 </Button>
               </div>
-            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -170,8 +168,17 @@ export default function PaymentStatus() {
               
               if (filteredInvoices.length === 0) {
                 return (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Tidak ada pembayaran {filter === 'pending' ? 'yang menunggu review' : filter === 'approved' ? 'yang disetujui' : filter === 'rejected' ? 'yang ditolak' : ''}
+                  <div className="text-center py-12">
+                    <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-lg font-medium text-foreground mb-2">
+                      Tidak ada pembayaran
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {filter === 'pending' && 'Tidak ada pembayaran yang menunggu review'}
+                      {filter === 'approved' && 'Belum ada pembayaran yang disetujui'}
+                      {filter === 'rejected' && 'Tidak ada pembayaran yang ditolak'}
+                      {filter === 'all' && 'Belum ada pembayaran manual'}
+                    </p>
                   </div>
                 );
               }

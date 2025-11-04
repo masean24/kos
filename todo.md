@@ -114,3 +114,8 @@
 - [x] Redesign color scheme - use more interesting colors (purple/indigo theme)
 - [x] Improve mobile layout for admin dashboard
 - [x] Document auto-invoice generation backend setup
+
+## UI Fix (User Feedback)
+- [x] Fix payment status page layout - improve readability and spacing
+- [x] Fix filter tabs styling
+- [x] Improve empty state message
