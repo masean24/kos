@@ -173,7 +173,7 @@ export default function TenantPayments() {
                   {invoices.map((inv: any) => (
                     <TableRow key={inv.id}>
                       <TableCell className="font-medium">{inv.bulan}</TableCell>
-                      <TableCell>Rp {inv.jumlah.toLocaleString("id-ID")}</TableCell>
+                      <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>
                       <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
                       <TableCell>{getStatusBadge(inv)}</TableCell>
                       <TableCell className="text-right">
@@ -215,7 +215,7 @@ export default function TenantPayments() {
           <DialogHeader>
             <DialogTitle>Pilih Metode Pembayaran</DialogTitle>
             <DialogDescription>
-              Invoice bulan {selectedInvoice?.bulan} - Rp {selectedInvoice?.jumlah.toLocaleString("id-ID")}
+              Invoice bulan {selectedInvoice?.bulan} - Rp {selectedInvoice?.jumlahTagihan.toLocaleString("id-ID")}
             </DialogDescription>
           </DialogHeader>
 

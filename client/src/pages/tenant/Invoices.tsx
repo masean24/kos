@@ -132,7 +132,7 @@ export default function TenantInvoices() {
                   {invoices.map((inv: any) => (
                     <TableRow key={inv.id}>
                       <TableCell className="font-medium">{inv.bulan}</TableCell>
-                      <TableCell>Rp {inv.jumlah.toLocaleString("id-ID")}</TableCell>
+                      <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>
                       <TableCell>{getStatusBadge(inv)}</TableCell>
                       <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
                       <TableCell className="text-right">

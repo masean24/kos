@@ -136,3 +136,7 @@
 - [x] Add print invoice feature for admin
 - [x] Add print invoice feature for tenant
 - [x] Add CSV export for payment reports (admin)
+
+## Critical Bug (User Report)
+- [x] Fix TypeError in tenant invoice page - toLocaleString on undefined
+- [x] Fix TypeError in tenant payment page - toLocaleString on undefined
