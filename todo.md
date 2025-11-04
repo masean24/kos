@@ -58,5 +58,13 @@
 - [x] Test admin workflow
 - [x] Test tenant registration and payment
 - [x] Test Xendit webhook (ready for integration)
-- [ ] Create deployment checkpoint
+- [x] Create deployment checkpoint
 - [x] Generate user guide
+
+## New Features (User Request)
+- [x] WhatsApp bot integration with Baileys
+- [x] Admin can create tenant accounts directly
+- [x] Admin can send WA payment reminder with 1 button
+- [x] Set default admin account (no need to create)
+- [x] VPS deployment documentation
+- [x] Database setup guide for VPS

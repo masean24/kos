@@ -8,7 +8,9 @@ Sistem manajemen kost modern yang lengkap dengan fitur admin dashboard, registra
 - **Dashboard Overview**: Monitoring real-time jumlah kamar, penghuni, dan invoice
 - **Manajemen Kamar**: CRUD kamar dengan tracking status (kosong/terisi)
 - **Manajemen Penghuni**: Lihat daftar semua penghuni aktif
+- **Buat Akun Penghuni**: Admin bisa langsung buat akun penghuni + assign kamar
 - **Manajemen Invoice**: Generate invoice bulanan otomatis, konfirmasi pembayaran manual
+- **WhatsApp Reminder**: Kirim reminder pembayaran via WA dengan 1 tombol
 - **Statistik Pemasukan**: Grafik pemasukan bulanan
 
 ### Fitur Penghuni
@@ -27,10 +29,11 @@ Sistem manajemen kost modern yang lengkap dengan fitur admin dashboard, registra
 
 - **Frontend**: React 19 + Tailwind CSS 4
 - **Backend**: Express 4 + tRPC 11
-- **Database**: MySQL (via Drizzle ORM)
+- **Database**: MySQL / MariaDB (via Drizzle ORM)
 - **Authentication**: Manus OAuth
 - **Payment Gateway**: Xendit
-- **Deployment**: Manus Platform
+- **WhatsApp Bot**: Baileys
+- **Deployment**: Manus Platform / VPS
 
 ## 📦 Setup & Installation
 
@@ -209,10 +212,31 @@ Jika ada error pembayaran atau pembayaran manual:
 
 ## 📝 Notes
 
-- Xendit integration siap digunakan setelah menambahkan API key
-- Webhook Xendit perlu dikonfigurasi di dashboard Xendit dengan URL: `https://your-domain.com/api/trpc/payment.webhook`
-- Owner project otomatis menjadi admin
-- Pengguna baru otomatis mendapat role "penghuni"
+### Database
+- Sistem menggunakan **MySQL** atau **MariaDB**
+- Di platform Manus: Database sudah disediakan otomatis
+- Di VPS: Anda perlu install MySQL/MariaDB sendiri atau gunakan managed database
+- Connection string di environment variable `DATABASE_URL`
+
+### Admin Account
+- Owner project (sesuai `OWNER_OPEN_ID` di env) otomatis jadi admin
+- Tidak perlu registrasi manual untuk admin
+- Admin bisa buat akun penghuni langsung dari dashboard
+
+### WhatsApp Bot
+- Set `ENABLE_WHATSAPP_BOT=true` untuk aktifkan
+- Scan QR code saat pertama kali running
+- Session disimpan di folder `wa-auth`
+- Bot bisa kirim reminder pembayaran otomatis
+
+### Xendit Integration
+- Tambahkan `XENDIT_API_KEY` di environment variables
+- Webhook URL: `https://your-domain.com/api/trpc/payment.webhook`
+- Support VA, QRIS, e-wallet
+
+### Deployment
+- **Platform Manus**: Deploy langsung dengan tombol Publish
+- **VPS**: Ikuti panduan lengkap di `DEPLOYMENT.md`
 
 ## 🤝 Support
 

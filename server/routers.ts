@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import { createXenditInvoice, XenditCallbackPayload } from "./xendit";
+import { sendPaymentReminder, getWhatsAppStatus } from "./whatsapp";
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -148,6 +149,47 @@ export const appRouter = router({
     list: adminProcedure.query(async () => {
       return await db.getAllPenghuni();
     }),
+
+    createByAdmin: adminProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        nomorHp: z.string().min(1),
+        nomorKamar: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        // Check room availability
+        const room = await db.getKamarByNomor(input.nomorKamar);
+        if (!room) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Nomor kamar tidak ditemukan' });
+        }
+        if (room.status === "terisi") {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Kamar sudah terisi' });
+        }
+
+        // Generate unique openId for manually created tenant
+        const openId = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create user
+        await db.upsertUser({
+          openId,
+          name: input.name,
+          email: input.email,
+          nomorHp: input.nomorHp,
+          role: "penghuni",
+        });
+
+        // Get the created user
+        const user = await db.getUserByOpenId(openId);
+        if (!user) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create user' });
+        }
+
+        // Assign room
+        await db.assignKamarToPenghuni(room.id, user.id);
+
+        return { success: true, user, room };
+      }),
   }),
 
   // ===== INVOICE MANAGEMENT =====
@@ -327,6 +369,49 @@ export const appRouter = router({
         );
 
         return { success: true, message: "Invoice updated to paid" };
+      }),
+  }),
+
+  // ===== WHATSAPP BOT =====
+  whatsapp: router({    status: adminProcedure.query(async () => {
+      return getWhatsAppStatus();
+    }),
+
+    sendReminder: adminProcedure
+      .input(z.object({ invoiceId: z.number() }))
+      .mutation(async ({ input }) => {
+        const invoice = await db.getInvoiceById(input.invoiceId);
+        if (!invoice) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice tidak ditemukan' });
+        }
+
+        if (invoice.status === "paid") {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invoice sudah dibayar' });
+        }
+
+        const user = await db.getUserById(invoice.userId);
+        if (!user || !user.nomorHp) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Nomor HP penghuni tidak ditemukan' });
+        }
+
+        const room = await db.getKamarById(invoice.kamarId);
+        if (!room) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Data kamar tidak ditemukan' });
+        }
+
+        const sent = await sendPaymentReminder(
+          user.name || "Penghuni",
+          user.nomorHp,
+          room.nomorKamar,
+          invoice.jumlahTagihan,
+          new Date(invoice.tanggalJatuhTempo)
+        );
+
+        if (sent) {
+          return { success: true, message: "Reminder berhasil dikirim via WhatsApp" };
+        } else {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Gagal mengirim reminder. Pastikan WhatsApp bot sudah terkoneksi.' });
+        }
       }),
   }),
 

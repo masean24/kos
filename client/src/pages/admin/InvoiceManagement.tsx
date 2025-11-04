@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Plus, CheckCircle, ArrowLeft } from "lucide-react";
+import { Loader2, Plus, CheckCircle, ArrowLeft, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
@@ -42,6 +42,15 @@ export default function InvoiceManagement() {
     onSuccess: () => {
       utils.invoice.list.invalidate();
       toast.success("Status invoice berhasil diupdate");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const sendReminderMutation = trpc.whatsapp.sendReminder.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -177,15 +186,26 @@ export default function InvoiceManagement() {
                       <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
                       <TableCell className="text-right">
                         {inv.status === "pending" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleMarkAsPaid(inv.id)}
-                            disabled={updateStatusMutation.isPending}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Tandai Lunas
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => sendReminderMutation.mutate({ invoiceId: inv.id })}
+                              disabled={sendReminderMutation.isPending}
+                            >
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              Kirim WA
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkAsPaid(inv.id)}
+                              disabled={updateStatusMutation.isPending}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Tandai Lunas
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>

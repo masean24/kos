@@ -1,19 +1,45 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Plus } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function TenantManagement() {
   const { user, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [nomorHp, setNomorHp] = useState("");
+  const [nomorKamar, setNomorKamar] = useState("");
 
+  const utils = trpc.useUtils();
   const { data: tenants, isLoading } = trpc.tenant.list.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
+  });
+
+  const createMutation = trpc.tenant.createByAdmin.useMutation({
+    onSuccess: () => {
+      utils.tenant.list.invalidate();
+      utils.kamar.list.invalidate();
+      setIsCreateOpen(false);
+      setName("");
+      setEmail("");
+      setNomorHp("");
+      setNomorKamar("");
+      toast.success("Penghuni berhasil ditambahkan");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
   useEffect(() => {
@@ -23,6 +49,14 @@ export default function TenantManagement() {
       setLocation("/tenant");
     }
   }, [user, authLoading, setLocation]);
+
+  const handleCreate = () => {
+    if (!name || !email || !nomorHp || !nomorKamar) {
+      toast.error("Mohon lengkapi semua field");
+      return;
+    }
+    createMutation.mutate({ name, email, nomorHp, nomorKamar });
+  };
 
   if (authLoading || !user || user.role !== "admin") {
     return (
@@ -50,8 +84,72 @@ export default function TenantManagement() {
 
       <main className="container py-8">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Penghuni Aktif</CardTitle>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tambah Penghuni
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Tambah Penghuni Baru</DialogTitle>
+                  <DialogDescription>
+                    Buat akun penghuni dan assign kamar secara langsung
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Nama Lengkap</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Masukkan nama lengkap"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nomorHp">Nomor HP (WhatsApp)</Label>
+                    <Input
+                      id="nomorHp"
+                      value={nomorHp}
+                      onChange={(e) => setNomorHp(e.target.value)}
+                      placeholder="08xxxxxxxxxx"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nomorKamar">Nomor Kamar</Label>
+                    <Input
+                      id="nomorKamar"
+                      value={nomorKamar}
+                      onChange={(e) => setNomorKamar(e.target.value)}
+                      placeholder="Contoh: 101"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                    Batal
+                  </Button>
+                  <Button onClick={handleCreate} disabled={createMutation.isPending}>
+                    {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Simpan
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent>
             {isLoading ? (
