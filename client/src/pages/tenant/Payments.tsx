@@ -13,7 +13,7 @@ import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { storagePut } from "@/lib/storage";
+
 
 export default function TenantPayments() {
   const { user, loading: authLoading } = useAuth();
@@ -63,21 +63,26 @@ export default function TenantPayments() {
 
     setUploading(true);
     try {
-      // Upload to S3
-      const arrayBuffer = await proofFile.arrayBuffer();
-      const buffer = new Uint8Array(arrayBuffer);
-      const fileName = `payment-proof/${user?.id}/${Date.now()}-${proofFile.name}`;
-      const { url } = await storagePut(fileName, buffer, proofFile.type);
-
-      // Save to database
-      await uploadProofMutation.mutateAsync({
-        invoiceId: selectedInvoice.id,
-        proofUrl: url,
-      });
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        
+        // Save base64 to database
+        await uploadProofMutation.mutateAsync({
+          invoiceId: selectedInvoice.id,
+          proofUrl: base64String, // data:image/png;base64,iVBORw0KG...
+        });
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        toast.error("Gagal membaca file");
+        setUploading(false);
+      };
+      reader.readAsDataURL(proofFile);
     } catch (error) {
       toast.error("Gagal upload bukti pembayaran");
       console.error(error);
-    } finally {
       setUploading(false);
     }
   };

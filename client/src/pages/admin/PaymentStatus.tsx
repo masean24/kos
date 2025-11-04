@@ -157,7 +157,12 @@ export default function PaymentStatus() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(inv.paymentProof!, '_blank')}
+                              onClick={() => {
+                                const win = window.open();
+                                if (win) {
+                                  win.document.write(`<img src="${inv.paymentProof}" style="max-width:100%;height:auto;" />`);
+                                }
+                              }}
                             >
                               <Eye className="h-4 w-4 mr-1" />
                               Lihat Bukti

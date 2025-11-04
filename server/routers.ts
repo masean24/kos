@@ -6,8 +6,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { invoice } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { invoice, issues } from "../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
 import { createXenditInvoice, XenditCallbackPayload } from "./xendit";
 import { sendPaymentReminder, getWhatsAppStatus } from "./whatsapp";
 
@@ -280,24 +280,25 @@ export const appRouter = router({
         invoiceId: z.number(),
         proofUrl: z.string(),
       }))
-      .mutation(async ({ input, ctx }) => {
-        const dbInstance = await getDb();
-        if (!dbInstance) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-        
-        // Verify invoice belongs to user
-        const inv = await db.getInvoiceById(input.invoiceId);
-        if (!inv || inv.userId !== ctx.user.id) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        
-        await dbInstance.update(invoice).set({
-          paymentProof: input.proofUrl,
-          paymentMethod: "manual",
-          approvalStatus: "pending",
-        }).where(eq(invoice.id, input.invoiceId));
-        
-        return { success: true, message: "Bukti pembayaran berhasil diupload" };
-      }),
+    .mutation(async ({ input, ctx }) => {
+      const dbInstance = await getDb();
+      if (!dbInstance) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      
+      // Verify invoice belongs to user
+      const inv = await db.getInvoiceById(input.invoiceId);
+      if (!inv || inv.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+      
+      // Store base64 directly in database (proofUrl is actually base64 data)
+      await dbInstance.update(invoice).set({
+        paymentProof: input.proofUrl,
+        paymentMethod: "manual",
+        approvalStatus: "pending",
+      }).where(eq(invoice.id, input.invoiceId));
+      
+      return { success: true, message: "Bukti pembayaran berhasil diupload" };
+    }),
     
     approvePayment: adminProcedure
       .input(z.object({
@@ -581,8 +582,32 @@ export const appRouter = router({
           });
         }
 
-        return chartData;
-      }),
+      return chartData;
+    }),
+    
+    notifications: adminProcedure.query(async () => {
+      const dbInstance = await getDb();
+      if (!dbInstance) return { pendingPayments: 0, openIssues: 0 };
+      
+      // Count pending manual payments
+      const pendingPayments = await dbInstance
+        .select({ count: sql<number>`count(*)` })
+        .from(invoice)
+        .where(
+          sql`${invoice.paymentMethod} = 'manual' AND ${invoice.approvalStatus} = 'pending'`
+        );
+      
+      // Count open issues
+      const openIssues = await dbInstance
+        .select({ count: sql<number>`count(*)` })
+        .from(issues)
+        .where(sql`${issues.status} = 'open'`);
+      
+      return {
+        pendingPayments: Number(pendingPayments[0]?.count || 0),
+        openIssues: Number(openIssues[0]?.count || 0),
+      };
+    }),
   }),
 
   // ===== FILE UPLOAD =====

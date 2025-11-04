@@ -91,3 +91,9 @@
 - [x] Tenant dashboard shows all payment history with status
 - [x] Add logout button to admin pages
 - [x] Add logout button to tenant pages
+
+## Latest Bug Fixes & Features
+- [x] Fix file upload - use base64 storage in database instead of S3
+- [x] Add notification badge in admin dashboard for pending manual payments
+- [x] Add notification badge in admin dashboard for new maintenance reports
+- [x] Show notification count in admin header

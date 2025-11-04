@@ -71,7 +71,7 @@ export const invoice = mysqlTable("invoice", {
   xenditInvoiceUrl: text("xenditInvoiceUrl"),
   tanggalJatuhTempo: timestamp("tanggalJatuhTempo").notNull(),
   tanggalDibayar: timestamp("tanggalDibayar"),
-  paymentProof: text("paymentProof"),
+  paymentProof: text("paymentProof"), // Base64 encoded image
   paymentMethod: mysqlEnum("paymentMethod", ["xendit", "manual"]).default("xendit"),
   approvalStatus: mysqlEnum("approvalStatus", ["pending", "approved", "rejected"]),
   approvedBy: int("approvedBy"),
