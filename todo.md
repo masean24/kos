@@ -125,3 +125,8 @@
 - [x] Fix Quick Actions buttons alignment and spacing
 - [x] Ensure all admin pages have consistent padding and spacing
 - [x] Fix mobile responsive layout for all admin pages
+
+## Critical Bugs (User Report)
+- [x] Fix mobile scroll issue in tenant pages - cannot scroll down
+- [x] Fix payment page errors (added overflow-y-auto)
+- [x] Fix invoice page errors (added overflow-y-auto)

@@ -45,7 +45,7 @@ export default function TenantInvoices() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-y-auto">
       <header className="border-b bg-card">
         <div className="container py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
