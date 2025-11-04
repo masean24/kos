@@ -266,9 +266,9 @@ Untuk set akun admin tanpa perlu registrasi:
 5. Restart aplikasi: `pm2 restart kost-management`
 6. Login lagi, role Anda otomatis jadi `admin`
 
-## ⏰ Setup Automatic Monthly Invoice Generation
+## ⏰ Setup Automatic Monthly Invoice Generation ✅
 
-Sistem sudah include script untuk generate invoice otomatis setiap bulan.
+**BACKEND SUDAH SIAP!** Sistem sudah include script `server/cron-invoice.ts` untuk generate invoice otomatis setiap bulan untuk semua penghuni aktif.
 
 ```bash
 # Test script manual

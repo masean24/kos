@@ -2,14 +2,15 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Building2, Users, FileText, DollarSign, Loader2, AlertCircle, Bell } from "lucide-react";
+import { Building2, Users, FileText, DollarSign, Loader2, AlertCircle, Bell, Menu, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
   });
@@ -37,13 +38,25 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+      <header className="border-b bg-card sticky top-0 z-50">
         <div className="container py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
             <p className="text-sm text-muted-foreground">Kost Management System</p>
           </div>
-          <div className="flex gap-2 items-center">
+          
+          {/* Mobile menu button */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
+
+          {/* Desktop navigation */}
+          <div className="hidden md:flex gap-2 items-center">
             {notifications && (notifications.pendingPayments > 0 || notifications.openIssues > 0) && (
               <div className="flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 rounded-md text-sm">
                 <Bell className="h-4 w-4" />
@@ -73,6 +86,69 @@ export default function AdminDashboard() {
             </Button>
           </div>
         </div>
+        
+        {/* Mobile navigation menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t bg-card">
+            <div className="container py-4 flex flex-col gap-2">
+              {notifications && (notifications.pendingPayments > 0 || notifications.openIssues > 0) && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-100 text-red-800 rounded-md text-sm">
+                  <Bell className="h-4 w-4" />
+                  <span>
+                    {notifications.pendingPayments > 0 && `${notifications.pendingPayments} pembayaran menunggu`}
+                    {notifications.pendingPayments > 0 && notifications.openIssues > 0 && " • "}
+                    {notifications.openIssues > 0 && `${notifications.openIssues} laporan baru`}
+                  </span>
+                </div>
+              )}
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  setLocation("/admin/rooms");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Kelola Kamar
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start relative"
+                onClick={() => {
+                  setLocation("/admin/payments");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Status Pembayaran
+                {notifications && notifications.pendingPayments > 0 && (
+                  <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                    {notifications.pendingPayments}
+                  </span>
+                )}
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  setLocation("/admin/invoices");
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Kelola Invoice
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Logout
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="container py-8">

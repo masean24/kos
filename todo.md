@@ -108,3 +108,9 @@
 - [x] Xendit payment auto-updates status to paid when completed
 - [x] Manual payment requires proof upload and admin approval
 - [x] Improve admin payment review dashboard clarity
+
+## UI Improvements (User Request)
+- [x] Add hamburger menu for mobile responsive navigation
+- [x] Redesign color scheme - use more interesting colors (purple/indigo theme)
+- [x] Improve mobile layout for admin dashboard
+- [x] Document auto-invoice generation backend setup
