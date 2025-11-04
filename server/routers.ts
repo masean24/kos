@@ -1,28 +1,391 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import * as db from "./db";
+import { createXenditInvoice, XenditCallbackPayload } from "./xendit";
+
+// Admin-only procedure
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+  }
+  return next({ ctx });
+});
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
+  
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  // ===== KAMAR (ROOM) MANAGEMENT =====
+  kamar: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getAllKamar();
+    }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getKamarById(input.id);
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        nomorKamar: z.string().min(1),
+        hargaSewa: z.number().min(0),
+      }))
+      .mutation(async ({ input }) => {
+        // Check if room number already exists
+        const existing = await db.getKamarByNomor(input.nomorKamar);
+        if (existing) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Nomor kamar sudah ada' });
+        }
+
+        return await db.createKamar({
+          nomorKamar: input.nomorKamar,
+          hargaSewa: input.hargaSewa,
+          status: "kosong",
+        });
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        nomorKamar: z.string().min(1).optional(),
+        hargaSewa: z.number().min(0).optional(),
+        status: z.enum(["kosong", "terisi"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        
+        // If changing room number, check uniqueness
+        if (data.nomorKamar) {
+          const existing = await db.getKamarByNomor(data.nomorKamar);
+          if (existing && existing.id !== id) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Nomor kamar sudah ada' });
+          }
+        }
+
+        return await db.updateKamar(id, data);
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const room = await db.getKamarById(input.id);
+        if (room?.status === "terisi") {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Tidak bisa hapus kamar yang terisi' });
+        }
+        await db.deleteKamar(input.id);
+        return { success: true };
+      }),
+
+    checkAvailability: publicProcedure
+      .input(z.object({ nomorKamar: z.string() }))
+      .query(async ({ input }) => {
+        const room = await db.getKamarByNomor(input.nomorKamar);
+        if (!room) {
+          return { available: false, message: "Nomor kamar tidak ditemukan" };
+        }
+        if (room.status === "terisi") {
+          return { available: false, message: "Kamar sudah terisi, hubungi admin" };
+        }
+        return { available: true, room };
+      }),
+  }),
+
+  // ===== TENANT REGISTRATION =====
+  tenant: router({
+    register: publicProcedure
+      .input(z.object({
+        openId: z.string(),
+        name: z.string().min(1),
+        email: z.string().email(),
+        nomorHp: z.string().min(1),
+        nomorKamar: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        // Check room availability
+        const room = await db.getKamarByNomor(input.nomorKamar);
+        if (!room) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Nomor kamar tidak ditemukan' });
+        }
+        if (room.status === "terisi") {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Kamar sudah terisi, hubungi admin' });
+        }
+
+        // Create user
+        await db.upsertUser({
+          openId: input.openId,
+          name: input.name,
+          email: input.email,
+          nomorHp: input.nomorHp,
+          role: "penghuni",
+        });
+
+        // Get the created user
+        const user = await db.getUserByOpenId(input.openId);
+        if (!user) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create user' });
+        }
+
+        // Assign room
+        await db.assignKamarToPenghuni(room.id, user.id);
+
+        return { success: true, user, room };
+      }),
+
+    list: adminProcedure.query(async () => {
+      return await db.getAllPenghuni();
+    }),
+  }),
+
+  // ===== INVOICE MANAGEMENT =====
+  invoice: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role === 'admin') {
+        return await db.getAllInvoices();
+      }
+      return await db.getInvoicesByUserId(ctx.user.id);
+    }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const invoice = await db.getInvoiceById(input.id);
+        if (!invoice) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice tidak ditemukan' });
+        }
+        
+        // Non-admin can only view their own invoices
+        if (ctx.user.role !== 'admin' && invoice.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Akses ditolak' });
+        }
+        
+        return invoice;
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        kamarId: z.number(),
+        bulan: z.string(), // Format: "2025-01"
+        jumlahTagihan: z.number().min(0),
+        tanggalJatuhTempo: z.date(),
+      }))
+      .mutation(async ({ input }) => {
+        // Check if invoice already exists for this month
+        const existing = await db.getInvoiceByUserAndMonth(input.userId, input.bulan);
+        if (existing) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invoice bulan ini sudah ada' });
+        }
+
+        return await db.createInvoice({
+          ...input,
+          status: "pending",
+        });
+      }),
+
+    generateMonthly: adminProcedure
+      .input(z.object({
+        bulan: z.string(), // Format: "2025-01"
+        tanggalJatuhTempo: z.date(),
+      }))
+      .mutation(async ({ input }) => {
+        const penghuni = await db.getAllPenghuni();
+        const generated = [];
+
+        for (const user of penghuni) {
+          if (!user.kamarId) continue;
+
+          // Check if invoice already exists
+          const existing = await db.getInvoiceByUserAndMonth(user.id, input.bulan);
+          if (existing) continue;
+
+          const room = await db.getKamarById(user.kamarId);
+          if (!room) continue;
+
+          const invoice = await db.createInvoice({
+            userId: user.id,
+            kamarId: room.id,
+            bulan: input.bulan,
+            jumlahTagihan: room.hargaSewa,
+            tanggalJatuhTempo: input.tanggalJatuhTempo,
+            status: "pending",
+          });
+
+          generated.push(invoice);
+        }
+
+        return { success: true, count: generated.length, invoices: generated };
+      }),
+
+    updateStatus: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["pending", "paid"]),
+      }))
+      .mutation(async ({ input }) => {
+        const tanggalDibayar = input.status === "paid" ? new Date() : undefined;
+        return await db.updateInvoiceStatus(input.id, input.status, tanggalDibayar);
+      }),
+
+    createPayment: protectedProcedure
+      .input(z.object({ invoiceId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const invoice = await db.getInvoiceById(input.invoiceId);
+        if (!invoice) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice tidak ditemukan' });
+        }
+
+        // Non-admin can only pay their own invoices
+        if (ctx.user.role !== 'admin' && invoice.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Akses ditolak' });
+        }
+
+        if (invoice.status === "paid") {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invoice sudah dibayar' });
+        }
+
+        const user = await db.getUserById(invoice.userId);
+        if (!user || !user.email) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Data pengguna tidak lengkap' });
+        }
+
+        // Create Xendit invoice
+        const xenditInvoice = await createXenditInvoice({
+          externalId: `INV-${invoice.id}-${Date.now()}`,
+          amount: invoice.jumlahTagihan,
+          payerEmail: user.email,
+          description: `Pembayaran sewa kamar bulan ${invoice.bulan}`,
+        });
+
+        if (xenditInvoice) {
+          await db.updateInvoiceXenditData(invoice.id, xenditInvoice.id, xenditInvoice.invoice_url);
+          return { 
+            success: true, 
+            paymentUrl: xenditInvoice.invoice_url,
+            xenditInvoiceId: xenditInvoice.id 
+          };
+        } else {
+          // Xendit not configured, return placeholder
+          return { 
+            success: false, 
+            message: "Xendit belum dikonfigurasi. Silakan hubungi admin.",
+            paymentUrl: null 
+          };
+        }
+      }),
+  }),
+
+  // ===== XENDIT WEBHOOK =====
+  payment: router({
+    webhook: publicProcedure
+      .input(z.object({
+        id: z.string(),
+        external_id: z.string(),
+        status: z.enum(["PENDING", "PAID", "EXPIRED"]),
+        paid_at: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        if (input.status !== "PAID") {
+          return { success: true, message: "Status not paid, ignored" };
+        }
+
+        // Extract invoice ID from external_id (format: INV-{id}-{timestamp})
+        const match = input.external_id.match(/^INV-(\d+)-/);
+        if (!match) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid external_id format' });
+        }
+
+        const invoiceId = parseInt(match[1]);
+        const invoice = await db.getInvoiceById(invoiceId);
+        
+        if (!invoice) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+        }
+
+        if (invoice.status === "paid") {
+          return { success: true, message: "Invoice already paid" };
+        }
+
+        // Update invoice status
+        await db.updateInvoiceStatus(
+          invoiceId, 
+          "paid", 
+          input.paid_at ? new Date(input.paid_at) : new Date()
+        );
+
+        return { success: true, message: "Invoice updated to paid" };
+      }),
+  }),
+
+  // ===== DASHBOARD STATS =====
+  dashboard: router({
+    stats: adminProcedure.query(async () => {
+      const allRooms = await db.getAllKamar();
+      const allInvoices = await db.getAllInvoices();
+      const allTenants = await db.getAllPenghuni();
+
+      const totalRooms = allRooms.length;
+      const occupiedRooms = allRooms.filter(r => r.status === "terisi").length;
+      const emptyRooms = totalRooms - occupiedRooms;
+
+      const pendingInvoices = allInvoices.filter(i => i.status === "pending").length;
+      const paidInvoices = allInvoices.filter(i => i.status === "paid").length;
+
+      // Calculate monthly revenue (current month)
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const currentMonthRevenue = allInvoices
+        .filter(i => i.bulan === currentMonth && i.status === "paid")
+        .reduce((sum, i) => sum + i.jumlahTagihan, 0);
+
+      return {
+        totalRooms,
+        occupiedRooms,
+        emptyRooms,
+        totalTenants: allTenants.length,
+        pendingInvoices,
+        paidInvoices,
+        currentMonthRevenue,
+      };
+    }),
+
+    revenueChart: adminProcedure
+      .input(z.object({ months: z.number().min(1).max(12).default(6) }))
+      .query(async ({ input }) => {
+        const allInvoices = await db.getAllInvoices();
+        const now = new Date();
+        const chartData = [];
+
+        for (let i = input.months - 1; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          
+          const revenue = allInvoices
+            .filter(inv => inv.bulan === monthStr && inv.status === "paid")
+            .reduce((sum, inv) => sum + inv.jumlahTagihan, 0);
+
+          chartData.push({
+            month: monthStr,
+            revenue,
+          });
+        }
+
+        return chartData;
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

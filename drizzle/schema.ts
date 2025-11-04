@@ -1,22 +1,18 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
+ * Extended with kost-specific fields for tenants and admins.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "penghuni"]).default("penghuni").notNull(),
+  nomorHp: varchar("nomorHp", { length: 20 }),
+  kamarId: int("kamarId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -25,4 +21,41 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Kamar (Rooms) table
+ * Tracks room availability and occupancy
+ */
+export const kamar = mysqlTable("kamar", {
+  id: int("id").autoincrement().primaryKey(),
+  nomorKamar: varchar("nomorKamar", { length: 10 }).notNull().unique(),
+  status: mysqlEnum("status", ["kosong", "terisi"]).default("kosong").notNull(),
+  penghuniId: int("penghuniId"),
+  hargaSewa: int("hargaSewa").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Kamar = typeof kamar.$inferSelect;
+export type InsertKamar = typeof kamar.$inferInsert;
+
+/**
+ * Invoice table
+ * Tracks monthly rent payments for each tenant
+ */
+export const invoice = mysqlTable("invoice", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  kamarId: int("kamarId").notNull(),
+  bulan: varchar("bulan", { length: 7 }).notNull(), // Format: "2025-01"
+  jumlahTagihan: int("jumlahTagihan").notNull(),
+  status: mysqlEnum("status", ["pending", "paid"]).default("pending").notNull(),
+  xenditInvoiceId: varchar("xenditInvoiceId", { length: 255 }),
+  xenditInvoiceUrl: text("xenditInvoiceUrl"),
+  tanggalJatuhTempo: timestamp("tanggalJatuhTempo").notNull(),
+  tanggalDibayar: timestamp("tanggalDibayar"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Invoice = typeof invoice.$inferSelect;
+export type InsertInvoice = typeof invoice.$inferInsert;
