@@ -1,7 +1,9 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
+import { AnimatePresence } from "framer-motion";
+import PageTransition from "./components/PageTransition";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -18,28 +20,84 @@ import TenantInvoices from "./pages/tenant/Invoices";
 import TenantPayments from "./pages/tenant/Payments";
 
 function Router() {
+  const [location] = useLocation();
+  
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
+    <AnimatePresence mode="wait">
+      <Switch location={location} key={location}>
+      <Route path={"/"}>
+        <PageTransition>
+          <Home />
+        </PageTransition>
+      </Route>
       
       {/* Admin Routes */}
-      <Route path={"/admin"} component={AdminDashboard} />
-      <Route path={"/admin/rooms"} component={RoomManagement} />
-      <Route path={"/admin/tenants"} component={TenantManagement} />
-      <Route path="/admin/invoices" component={InvoiceManagement} />
-      <Route path="/admin/issues" component={IssueManagement} />
-      <Route path="/admin/payments" component={PaymentStatus} />
+      <Route path={"/admin"}>
+        <PageTransition>
+          <AdminDashboard />
+        </PageTransition>
+      </Route>
+      <Route path={"/admin/rooms"}>
+        <PageTransition>
+          <RoomManagement />
+        </PageTransition>
+      </Route>
+      <Route path={"/admin/tenants"}>
+        <PageTransition>
+          <TenantManagement />
+        </PageTransition>
+      </Route>
+      <Route path="/admin/invoices">
+        <PageTransition>
+          <InvoiceManagement />
+        </PageTransition>
+      </Route>
+      <Route path="/admin/issues">
+        <PageTransition>
+          <IssueManagement />
+        </PageTransition>
+      </Route>
+      <Route path="/admin/payments">
+        <PageTransition>
+          <PaymentStatus />
+        </PageTransition>
+      </Route>
       
       {/* Tenant Routes */}
-      <Route path="/tenant" component={TenantDashboard} />
-      <Route path="/tenant/dashboard" component={TenantDashboard} />
-      <Route path="/tenant/register" component={TenantRegister} />
-      <Route path="/tenant/report" component={TenantReportIssue} />
-      <Route path="/tenant/invoices" component={TenantInvoices} />
-      <Route path="/tenant/payments" component={TenantPayments} />      
+      <Route path="/tenant">
+        <PageTransition>
+          <TenantDashboard />
+        </PageTransition>
+      </Route>
+      <Route path="/tenant/dashboard">
+        <PageTransition>
+          <TenantDashboard />
+        </PageTransition>
+      </Route>
+      <Route path="/tenant/register">
+        <PageTransition>
+          <TenantRegister />
+        </PageTransition>
+      </Route>
+      <Route path="/tenant/report">
+        <PageTransition>
+          <TenantReportIssue />
+        </PageTransition>
+      </Route>
+      <Route path="/tenant/invoices">
+        <PageTransition>
+          <TenantInvoices />
+        </PageTransition>
+      </Route>
+      <Route path="/tenant/payments">
+        <PageTransition>
+          <TenantPayments />
+        </PageTransition>
+      </Route>      
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
+    </AnimatePresence>
   );
 }
 

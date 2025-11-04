@@ -121,18 +121,18 @@ export default function TenantPayments() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-gray-600">Memuat halaman...</p>
+          <p className="text-muted-foreground">Memuat halaman...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-y-auto">
-      <header className="border-b bg-white shadow-sm">
+    <div className="min-h-screen bg-background overflow-y-auto">
+      <header className="border-b bg-card shadow-sm">
         <div className="container py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => setLocation("/tenant/dashboard")}>

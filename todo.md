@@ -157,3 +157,8 @@
 - [x] Add theme toggle button to admin dashboard header
 - [x] Add theme toggle button to tenant dashboard header
 - [x] Test dark/light mode switching
+
+## Bug Fixes & New Feature (User Report)
+- [x] Fix light mode display in tenant Invoice page - Card background not adapting
+- [x] Fix light mode display in tenant Payments page - Card background not adapting
+- [x] Add smooth page transition animations between routes
