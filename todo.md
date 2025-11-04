@@ -170,3 +170,14 @@
 ## UI Fix (User Report)
 - [x] Fix spacing in report form - labels too close to input boxes
 - [x] Add proper margin between form labels and inputs
+
+## Authentication System Replacement (VPS Deployment)
+- [x] Update database schema - add username and password fields
+- [x] Install bcrypt for password hashing
+- [x] Create login page with username/password form
+- [x] Create registration page for new users
+- [x] Update backend auth routes - replace OAuth with username/password
+- [x] Update frontend auth hooks to use new login system
+- [x] Remove Manus OAuth dependencies
+- [x] Test login/logout functionality
+- [ ] Push updated code to GitHub

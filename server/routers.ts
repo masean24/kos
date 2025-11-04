@@ -24,6 +24,76 @@ export const appRouter = router({
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    
+    login: publicProcedure
+      .input(z.object({
+        username: z.string(),
+        password: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const bcrypt = await import('bcryptjs');
+        const jwt = await import('jsonwebtoken');
+        
+        const user = await db.getUserByUsername(input.username);
+        if (!user) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Username atau password salah' });
+        }
+        
+        const isValid = await bcrypt.compare(input.password, user.password);
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Username atau password salah' });
+        }
+        
+        // Create JWT token
+        const token = jwt.sign(
+          { userId: user.id, username: user.username, role: user.role },
+          process.env.JWT_SECRET || 'your-secret-key',
+          { expiresIn: '7d' }
+        );
+        
+        // Set cookie
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
+        
+        // Return user without password
+        const { password, ...userWithoutPassword } = user;
+        return { success: true, user: userWithoutPassword };
+      }),
+    
+    register: publicProcedure
+      .input(z.object({
+        username: z.string().min(3),
+        password: z.string().min(6),
+        name: z.string(),
+        email: z.string().email().optional(),
+        nomorHp: z.string().optional(),
+        role: z.enum(['admin', 'penghuni']).default('penghuni'),
+      }))
+      .mutation(async ({ input }) => {
+        const bcrypt = await import('bcryptjs');
+        
+        // Check if username exists
+        const existing = await db.getUserByUsername(input.username);
+        if (existing) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username sudah digunakan' });
+        }
+        
+        // Hash password
+        const hashedPassword = await bcrypt.hash(input.password, 10);
+        
+        // Create user
+        const user = await db.createUser({
+          username: input.username,
+          password: hashedPassword,
+          name: input.name,
+          email: input.email || null,
+          nomorHp: input.nomorHp || null,
+          role: input.role,
+        });
+        
+        return { success: true, userId: user?.id };
+      }),
+    
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -112,13 +182,22 @@ export const appRouter = router({
   tenant: router({
     register: publicProcedure
       .input(z.object({
-        openId: z.string(),
+        username: z.string().min(3),
+        password: z.string().min(6),
         name: z.string().min(1),
         email: z.string().email(),
         nomorHp: z.string().min(1),
         nomorKamar: z.string().min(1),
       }))
       .mutation(async ({ input }) => {
+        const bcrypt = await import('bcryptjs');
+        
+        // Check if username exists
+        const existing = await db.getUserByUsername(input.username);
+        if (existing) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username sudah digunakan' });
+        }
+        
         // Check room availability
         const room = await db.getKamarByNomor(input.nomorKamar);
         if (!room) {
@@ -128,17 +207,19 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Kamar sudah terisi, hubungi admin' });
         }
 
+        // Hash password
+        const hashedPassword = await bcrypt.hash(input.password, 10);
+        
         // Create user
-        await db.upsertUser({
-          openId: input.openId,
+        const user = await db.createUser({
+          username: input.username,
+          password: hashedPassword,
           name: input.name,
           email: input.email,
           nomorHp: input.nomorHp,
           role: "penghuni",
         });
-
-        // Get the created user
-        const user = await db.getUserByOpenId(input.openId);
+        
         if (!user) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create user' });
         }
@@ -155,12 +236,22 @@ export const appRouter = router({
 
     createByAdmin: adminProcedure
       .input(z.object({
+        username: z.string().min(3),
+        password: z.string().min(6),
         name: z.string().min(1),
         email: z.string().email(),
         nomorHp: z.string().min(1),
         nomorKamar: z.string().min(1),
       }))
       .mutation(async ({ input }) => {
+        const bcrypt = await import('bcryptjs');
+        
+        // Check if username exists
+        const existing = await db.getUserByUsername(input.username);
+        if (existing) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username sudah digunakan' });
+        }
+        
         // Check room availability
         const room = await db.getKamarByNomor(input.nomorKamar);
         if (!room) {
@@ -170,20 +261,19 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Kamar sudah terisi' });
         }
 
-        // Generate unique openId for manually created tenant
-        const openId = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
+        // Hash password
+        const hashedPassword = await bcrypt.hash(input.password, 10);
+        
         // Create user
-        await db.upsertUser({
-          openId,
+        const user = await db.createUser({
+          username: input.username,
+          password: hashedPassword,
           name: input.name,
           email: input.email,
           nomorHp: input.nomorHp,
           role: "penghuni",
         });
-
-        // Get the created user
-        const user = await db.getUserByOpenId(openId);
+        
         if (!user) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create user' });
         }

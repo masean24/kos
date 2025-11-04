@@ -6,11 +6,11 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean 
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  username: varchar("username", { length: 64 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "penghuni"]).default("penghuni").notNull(),
+  role: mysqlEnum("role", ["admin", "penghuni"]).default("penghuni").notNull(),
   nomorHp: varchar("nomorHp", { length: 20 }),
   kamarId: int("kamarId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

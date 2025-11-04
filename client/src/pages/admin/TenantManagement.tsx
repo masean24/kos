@@ -16,6 +16,8 @@ export default function TenantManagement() {
   const { user, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [nomorHp, setNomorHp] = useState("");
@@ -31,6 +33,8 @@ export default function TenantManagement() {
       utils.tenant.list.invalidate();
       utils.kamar.list.invalidate();
       setIsCreateOpen(false);
+      setUsername("");
+      setPassword("");
       setName("");
       setEmail("");
       setNomorHp("");
@@ -51,11 +55,15 @@ export default function TenantManagement() {
   }, [user, authLoading, setLocation]);
 
   const handleCreate = () => {
-    if (!name || !email || !nomorHp || !nomorKamar) {
+    if (!username || !password || !name || !email || !nomorHp || !nomorKamar) {
       toast.error("Mohon lengkapi semua field");
       return;
     }
-    createMutation.mutate({ name, email, nomorHp, nomorKamar });
+    if (password.length < 6) {
+      toast.error("Password minimal 6 karakter");
+      return;
+    }
+    createMutation.mutate({ username, password, name, email, nomorHp, nomorKamar });
   };
 
   if (authLoading || !user || user.role !== "admin") {
@@ -102,12 +110,31 @@ export default function TenantManagement() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Username untuk login"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="name">Nama Lengkap</Label>
                     <Input
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Masukkan nama lengkap"
+                      placeholder="Nama penghuni"
                     />
                   </div>
                   <div>

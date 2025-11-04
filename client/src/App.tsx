@@ -12,15 +12,18 @@ import InvoiceManagement from "./pages/admin/InvoiceManagement";
 import IssueManagement from "./pages/admin/IssueManagement";
 import PaymentStatus from "./pages/admin/PaymentStatus";
 import TenantDashboard from "./pages/tenant/Dashboard";
-import TenantRegister from "./pages/tenant/Register";
 import TenantReportIssue from "./pages/tenant/ReportIssue";
 import TenantInvoices from "./pages/tenant/Invoices";
 import TenantPayments from "./pages/tenant/Payments";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/login"} component={Login} />
+      <Route path={"/register"} component={Register} />
       
       {/* Admin Routes */}
       <Route path={"/admin"} component={AdminDashboard} />
@@ -33,7 +36,6 @@ function Router() {
       {/* Tenant Routes */}
       <Route path="/tenant" component={TenantDashboard} />
       <Route path="/tenant/dashboard" component={TenantDashboard} />
-      <Route path="/tenant/register" component={TenantRegister} />
       <Route path="/tenant/report" component={TenantReportIssue} />
       <Route path="/tenant/invoices" component={TenantInvoices} />
       <Route path="/tenant/payments" component={TenantPayments} />      
