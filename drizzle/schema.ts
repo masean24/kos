@@ -22,7 +22,25 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Kamar (Rooms) table
+ * Issues/complaints reported by tenants
+ */
+export const issues = mysqlTable("issues", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  kamarId: int("kamarId"),
+  judul: varchar("judul", { length: 255 }).notNull(),
+  deskripsi: text("deskripsi").notNull(),
+  status: mysqlEnum("status", ["open", "in_progress", "resolved"]).default("open").notNull(),
+  prioritas: mysqlEnum("prioritas", ["low", "medium", "high"]).default("medium").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+});
+
+export type Issue = typeof issues.$inferSelect;
+export type InsertIssue = typeof issues.$inferInsert;
+
+/**
  * Tracks room availability and occupancy
  */
 export const kamar = mysqlTable("kamar", {

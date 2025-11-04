@@ -372,6 +372,55 @@ export const appRouter = router({
       }),
   }),
 
+  // ===== ISSUE REPORTING =====
+  issue: router({    // Tenant: Create new issue
+    create: protectedProcedure
+      .input(z.object({
+        judul: z.string().min(1),
+        deskripsi: z.string().min(1),
+        prioritas: z.enum(["low", "medium", "high"]).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const user = ctx.user;
+        
+        // Get user's room
+        const userWithRoom = await db.getUserById(user.id);
+        if (!userWithRoom || !userWithRoom.kamarId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Anda belum terdaftar di kamar manapun' });
+        }
+
+        await db.createIssue({
+          userId: user.id,
+          kamarId: userWithRoom.kamarId,
+          judul: input.judul,
+          deskripsi: input.deskripsi,
+          prioritas: input.prioritas || "medium",
+          status: "open",
+        });
+
+        return { success: true, message: "Laporan berhasil dikirim" };
+      }),
+
+    // List issues (filtered by role)
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role === 'admin') {
+        return await db.getAllIssues();
+      }
+      return await db.getIssuesByUserId(ctx.user.id);
+    }),
+
+    // Admin: Update issue status
+    updateStatus: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["open", "in_progress", "resolved"]),
+      }))
+      .mutation(async ({ input }) => {
+        await db.updateIssueStatus(input.id, input.status);
+        return { success: true, message: "Status issue berhasil diupdate" };
+      }),
+  }),
+
   // ===== WHATSAPP BOT =====
   whatsapp: router({    status: adminProcedure.query(async () => {
       return getWhatsAppStatus();

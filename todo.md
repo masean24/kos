@@ -68,3 +68,11 @@
 - [x] Set default admin account (no need to create)
 - [x] VPS deployment documentation
 - [x] Database setup guide for VPS
+
+## Bug Fixes & New Features (Latest Request)
+- [x] Fix invoice system - each user should have their own invoices (already implemented)
+- [x] Add issue reporting table in database
+- [x] Tenant can report issues via web interface
+- [ ] Tenant can report issues via WhatsApp (optional - can be added later)
+- [x] Admin dashboard to view all payment status
+- [x] Admin can view and manage reported issues

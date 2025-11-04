@@ -1,6 +1,6 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, kamar, InsertKamar, Kamar, invoice, InsertInvoice, Invoice } from "../drizzle/schema";
+import { InsertUser, users, kamar, invoice, issues, InsertIssue, InsertInvoice, Invoice, InsertKamar, Kamar } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -235,4 +235,48 @@ export async function getUserById(id: number) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result[0];
+}
+
+// ===== ISSUE MANAGEMENT =====
+
+export async function createIssue(issue: InsertIssue) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(issues).values(issue);
+  return result;
+}
+
+export async function getAllIssues() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(issues).orderBy(desc(issues.createdAt));
+}
+
+export async function getIssuesByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(issues).where(eq(issues.userId, userId)).orderBy(desc(issues.createdAt));
+}
+
+export async function getIssueById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(issues).where(eq(issues.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateIssueStatus(id: number, status: "open" | "in_progress" | "resolved") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateData: any = { status, updatedAt: new Date() };
+  if (status === "resolved") {
+    updateData.resolvedAt = new Date();
+  }
+  
+  await db.update(issues).set(updateData).where(eq(issues.id, id));
 }

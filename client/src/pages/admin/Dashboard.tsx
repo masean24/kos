@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Building2, Users, FileText, DollarSign, Loader2 } from "lucide-react";
+import { Building2, Users, FileText, DollarSign, Loader2, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect } from "react";
@@ -41,6 +41,9 @@ export default function AdminDashboard() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setLocation("/admin/rooms")}>
               Kelola Kamar
+            </Button>
+            <Button variant="outline" onClick={() => setLocation("/admin/payments")}>
+              Status Pembayaran
             </Button>
             <Button variant="outline" onClick={() => setLocation("/admin/invoices")}>
               Kelola Invoice
@@ -125,6 +128,10 @@ export default function AdminDashboard() {
                 <Button onClick={() => setLocation("/admin/invoices")} variant="outline">
                   <FileText className="mr-2 h-4 w-4" />
                   Kelola Invoice
+                </Button>
+                <Button onClick={() => setLocation("/admin/issues")} variant="outline">
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Kelola Laporan
                 </Button>
               </CardContent>
             </Card>

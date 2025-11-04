@@ -9,9 +9,12 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import RoomManagement from "./pages/admin/RoomManagement";
 import TenantManagement from "./pages/admin/TenantManagement";
 import InvoiceManagement from "./pages/admin/InvoiceManagement";
+import IssueManagement from "./pages/admin/IssueManagement";
+import PaymentStatus from "./pages/admin/PaymentStatus";
 import TenantDashboard from "./pages/tenant/Dashboard";
-import TenantInvoices from "./pages/tenant/Invoices";
 import TenantRegister from "./pages/tenant/Register";
+import TenantReportIssue from "./pages/tenant/ReportIssue";
+import TenantInvoices from "./pages/tenant/Invoices";
 
 function Router() {
   return (
@@ -22,13 +25,15 @@ function Router() {
       <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/admin/rooms"} component={RoomManagement} />
       <Route path={"/admin/tenants"} component={TenantManagement} />
-      <Route path={"/admin/invoices"} component={InvoiceManagement} />
+      <Route path="/admin/invoices" component={InvoiceManagement} />
+      <Route path="/admin/issues" component={IssueManagement} />
+      <Route path="/admin/payments" component={PaymentStatus} />
       
       {/* Tenant Routes */}
-      <Route path={"/tenant"} component={TenantDashboard} />
-      <Route path={"/tenant/invoices"} component={TenantInvoices} />
-      <Route path={"/tenant/register"} component={TenantRegister} />
-      
+        <Route path="/tenant" component={TenantDashboard} />
+      <Route path="/tenant/register" component={TenantRegister} />
+      <Route path="/tenant/report" component={TenantReportIssue} />
+      <Route path="/tenant/invoices" component={TenantInvoices} />      
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
