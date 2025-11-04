@@ -166,6 +166,7 @@ export default function InvoiceManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Penghuni</TableHead>
                     <TableHead>Bulan</TableHead>
                     <TableHead>Jumlah</TableHead>
                     <TableHead>Status</TableHead>
@@ -176,7 +177,13 @@ export default function InvoiceManagement() {
                 <TableBody>
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
-                      <TableCell className="font-medium">{inv.bulan}</TableCell>
+                      <TableCell className="font-medium">
+                        {inv.tenantName || `User #${inv.userId}`}
+                        {inv.tenantEmail && (
+                          <div className="text-xs text-muted-foreground">{inv.tenantEmail}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>{inv.bulan}</TableCell>
                       <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>
                       <TableCell>
                         <Badge variant={inv.status === "paid" ? "default" : "secondary"}>

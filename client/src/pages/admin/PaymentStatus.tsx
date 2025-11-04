@@ -117,7 +117,7 @@ export default function PaymentStatus() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User ID</TableHead>
+                    <TableHead>Penghuni</TableHead>
                     <TableHead>Kamar</TableHead>
                     <TableHead>Bulan</TableHead>
                     <TableHead>Jumlah</TableHead>
@@ -129,7 +129,12 @@ export default function PaymentStatus() {
                 <TableBody>
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
-                      <TableCell className="font-medium">{inv.userId}</TableCell>
+                      <TableCell className="font-medium">
+                        {inv.tenantName || `User #${inv.userId}`}
+                        {inv.tenantEmail && (
+                          <div className="text-xs text-muted-foreground">{inv.tenantEmail}</div>
+                        )}
+                      </TableCell>
                       <TableCell>{inv.kamarId}</TableCell>
                       <TableCell>{inv.bulan}</TableCell>
                       <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>

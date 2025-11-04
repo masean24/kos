@@ -266,6 +266,33 @@ Untuk set akun admin tanpa perlu registrasi:
 5. Restart aplikasi: `pm2 restart kost-management`
 6. Login lagi, role Anda otomatis jadi `admin`
 
+## ⏰ Setup Automatic Monthly Invoice Generation
+
+Sistem sudah include script untuk generate invoice otomatis setiap bulan.
+
+```bash
+# Test script manual
+cd /var/www/kost-management
+node --import tsx server/cron-invoice.ts
+
+# Setup cron job
+crontab -e
+
+# Tambahkan baris ini (generate invoice setiap tanggal 1 jam 00:00)
+0 0 1 * * cd /var/www/kost-management && node --import tsx server/cron-invoice.ts >> /var/log/kost-cron.log 2>&1
+```
+
+Cron job akan:
+- Jalan otomatis setiap tanggal 1 jam 00:00
+- Generate invoice untuk semua penghuni aktif
+- Set jatuh tempo tanggal 10
+- Log output ke `/var/log/kost-cron.log`
+
+**Cek log cron:**
+```bash
+tail -f /var/log/kost-cron.log
+```
+
 ## 🔧 Maintenance Commands
 
 ```bash

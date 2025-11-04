@@ -158,16 +158,61 @@ export async function assignKamarToPenghuni(kamarId: number, penghuniId: number)
 
 // ===== INVOICE QUERIES =====
 
-export async function getAllInvoices(): Promise<Invoice[]> {
+export async function getAllInvoices() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(invoice).orderBy(desc(invoice.createdAt));
+  
+  const results = await db
+    .select({
+      id: invoice.id,
+      userId: invoice.userId,
+      kamarId: invoice.kamarId,
+      bulan: invoice.bulan,
+      jumlahTagihan: invoice.jumlahTagihan,
+      status: invoice.status,
+      tanggalJatuhTempo: invoice.tanggalJatuhTempo,
+      tanggalDibayar: invoice.tanggalDibayar,
+      xenditInvoiceId: invoice.xenditInvoiceId,
+      xenditInvoiceUrl: invoice.xenditInvoiceUrl,
+      createdAt: invoice.createdAt,
+      updatedAt: invoice.updatedAt,
+      tenantName: users.name,
+      tenantEmail: users.email,
+    })
+    .from(invoice)
+    .leftJoin(users, eq(invoice.userId, users.id))
+    .orderBy(desc(invoice.createdAt));
+  
+  return results;
 }
 
-export async function getInvoicesByUserId(userId: number): Promise<Invoice[]> {
+export async function getInvoicesByUserId(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(invoice).where(eq(invoice.userId, userId)).orderBy(desc(invoice.createdAt));
+  
+  const results = await db
+    .select({
+      id: invoice.id,
+      userId: invoice.userId,
+      kamarId: invoice.kamarId,
+      bulan: invoice.bulan,
+      jumlahTagihan: invoice.jumlahTagihan,
+      status: invoice.status,
+      tanggalJatuhTempo: invoice.tanggalJatuhTempo,
+      tanggalDibayar: invoice.tanggalDibayar,
+      xenditInvoiceId: invoice.xenditInvoiceId,
+      xenditInvoiceUrl: invoice.xenditInvoiceUrl,
+      createdAt: invoice.createdAt,
+      updatedAt: invoice.updatedAt,
+      tenantName: users.name,
+      tenantEmail: users.email,
+    })
+    .from(invoice)
+    .leftJoin(users, eq(invoice.userId, users.id))
+    .where(eq(invoice.userId, userId))
+    .orderBy(desc(invoice.createdAt));
+  
+  return results;
 }
 
 export async function getInvoiceById(id: number): Promise<Invoice | undefined> {
@@ -228,6 +273,19 @@ export async function getAllPenghuni(): Promise<typeof users.$inferSelect[]> {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(users).where(eq(users.role, "penghuni"));
+}
+
+export async function getAllActiveTenants() {
+  const db = await getDb();
+  if (!db) return [];
+  // Get all tenants who have a room assigned (kamarId is not null)
+  const result = await db.select().from(users).where(
+    and(
+      eq(users.role, "penghuni"),
+      // kamarId is not null - we need to check it's defined
+    )
+  );
+  return result.filter(u => u.kamarId !== null);
 }
 
 export async function getUserById(id: number) {

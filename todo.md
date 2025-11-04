@@ -76,3 +76,10 @@
 - [ ] Tenant can report issues via WhatsApp (optional - can be added later)
 - [x] Admin dashboard to view all payment status
 - [x] Admin can view and manage reported issues
+
+## Latest Requirements
+- [x] Invoice generation should show tenant name (not just user ID)
+- [x] Automatic monthly invoice generation for all active tenants
+- [x] Fix tenant login system - only allow tenant account creation (documented)
+- [x] Create default admin account automatically (via OWNER_OPEN_ID)
+- [x] Update invoice table to show tenant names
