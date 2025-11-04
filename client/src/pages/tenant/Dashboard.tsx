@@ -15,7 +15,7 @@ export default function TenantDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { data: invoices, isLoading: invoicesLoading } = trpc.invoice.list.useQuery(undefined, {
-    enabled: !!user && user.role === "user",
+    enabled: !!user && user.role === "penghuni",
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -33,10 +33,10 @@ export default function TenantDashboard() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-gray-600">Memuat dashboard...</p>
+          <p className="text-muted-foreground">Memuat dashboard...</p>
         </div>
       </div>
     );
@@ -47,16 +47,16 @@ export default function TenantDashboard() {
   const totalPending = pendingInvoices.reduce((sum: number, inv: any) => sum + (inv.jumlahTagihan || 0), 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white border-b shadow-sm sticky top-0 z-50">
+      <header className="bg-card border-b shadow-sm sticky top-0 z-50">
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Dashboard Penghuni
               </h1>
-              <p className="text-sm text-gray-600">Selamat datang, {user.name}</p>
+              <p className="text-sm text-muted-foreground">Selamat datang, {user.name}</p>
             </div>
 
             {/* Desktop Navigation */}
@@ -145,29 +145,29 @@ export default function TenantDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="border-l-4 border-l-indigo-500 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Invoice</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Invoice</CardTitle>
             </CardHeader>
             <CardContent>
               {invoicesLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
               ) : (
-                <div className="text-3xl font-bold text-gray-900">{invoices?.length || 0}</div>
+                <div className="text-3xl font-bold text-foreground">{invoices?.length || 0}</div>
               )}
-              <p className="text-xs text-gray-500 mt-1">Semua tagihan</p>
+              <p className="text-xs text-muted-foreground mt-1">Semua tagihan</p>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-amber-500 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Belum Dibayar</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Belum Dibayar</CardTitle>
             </CardHeader>
             <CardContent>
               {invoicesLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
               ) : (
                 <>
-                  <div className="text-3xl font-bold text-gray-900">{pendingInvoices.length}</div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <div className="text-3xl font-bold text-foreground">{pendingInvoices.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
                     Total: Rp {totalPending.toLocaleString("id-ID")}
                   </p>
                 </>
@@ -177,15 +177,15 @@ export default function TenantDashboard() {
 
           <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Sudah Dibayar</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Sudah Dibayar</CardTitle>
             </CardHeader>
             <CardContent>
               {invoicesLoading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-green-600" />
               ) : (
-                <div className="text-3xl font-bold text-gray-900">{paidInvoices.length}</div>
+                <div className="text-3xl font-bold text-foreground">{paidInvoices.length}</div>
               )}
-              <p className="text-xs text-gray-500 mt-1">Invoice lunas</p>
+              <p className="text-xs text-muted-foreground mt-1">Invoice lunas</p>
             </CardContent>
           </Card>
         </div>
@@ -200,7 +200,7 @@ export default function TenantDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button
                 variant="outline"
-                className="h-24 flex-col gap-2 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300"
+                className="h-24 flex-col gap-2 hover:bg-accent hover:border-primary transition-all duration-300"
                 onClick={() => setLocation("/tenant/invoices")}
               >
                 <FileText className="h-8 w-8 text-indigo-600" />
@@ -208,7 +208,7 @@ export default function TenantDashboard() {
               </Button>
               <Button
                 variant="outline"
-                className="h-24 flex-col gap-2 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300"
+                className="h-24 flex-col gap-2 hover:bg-accent hover:border-primary transition-all duration-300"
                 onClick={() => setLocation("/tenant/payments")}
               >
                 <CreditCard className="h-8 w-8 text-purple-600" />
@@ -216,7 +216,7 @@ export default function TenantDashboard() {
               </Button>
               <Button
                 variant="outline"
-                className="h-24 flex-col gap-2 hover:bg-rose-50 hover:border-rose-300 transition-all duration-300"
+                className="h-24 flex-col gap-2 hover:bg-accent hover:border-destructive transition-all duration-300"
                 onClick={() => setLocation("/tenant/report")}
               >
                 <AlertCircle className="h-8 w-8 text-rose-600" />
@@ -237,31 +237,31 @@ export default function TenantDashboard() {
               <div className="flex justify-center py-12">
                 <div className="text-center">
                   <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Memuat invoice...</p>
+                  <p className="text-muted-foreground">Memuat invoice...</p>
                 </div>
               </div>
             ) : !invoices || invoices.length === 0 ? (
               <div className="text-center py-12">
-                <Building2 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">Belum ada invoice</p>
-                <p className="text-sm text-gray-400 mt-1">Invoice akan muncul di sini</p>
+                <Building2 className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground font-medium">Belum ada invoice</p>
+                <p className="text-sm text-muted-foreground/70 mt-1">Invoice akan muncul di sini</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {invoices.slice(0, 5).map((inv: any, index: number) => (
                   <div
                     key={inv.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-all duration-200 animate-in slide-in-from-left"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-all duration-200 animate-in slide-in-from-left"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">{inv.bulan}</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="font-semibold text-foreground">{inv.bulan}</div>
+                      <div className="text-sm text-muted-foreground">
                         Jatuh tempo: {new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}
                       </div>
                     </div>
                     <div className="text-right mr-4">
-                      <div className="font-bold text-gray-900">
+                      <div className="font-bold text-foreground">
                         Rp {inv.jumlahTagihan.toLocaleString("id-ID")}
                       </div>
                     </div>

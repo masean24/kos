@@ -14,7 +14,7 @@ export default function TenantInvoices() {
   const [, setLocation] = useLocation();
 
   const { data: invoices, isLoading } = trpc.invoice.list.useQuery(undefined, {
-    enabled: !!user && user.role === "user",
+    enabled: !!user && user.role === "penghuni",
   });
 
   useEffect(() => {

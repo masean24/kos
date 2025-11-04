@@ -24,7 +24,7 @@ export default function TenantPayments() {
 
   const utils = trpc.useUtils();
   const { data: invoices, isLoading } = trpc.invoice.list.useQuery(undefined, {
-    enabled: !!user && user.role === "user",
+    enabled: !!user && user.role === "penghuni",
   });
 
   const createPaymentMutation = trpc.invoice.createPayment.useMutation({

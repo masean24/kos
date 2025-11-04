@@ -147,3 +147,7 @@
 - [x] Add loading animations for payment data
 - [x] Add micro-interactions and transitions for better UX
 - [x] Update routing to include tenant dashboard
+
+## Critical Bugs (User Report)
+- [x] Fix text visibility on tenant dashboard - dark text on dark background
+- [x] Fix missing tenant data - invoices not loading properly
