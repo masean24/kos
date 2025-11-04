@@ -162,3 +162,7 @@
 - [x] Fix light mode display in tenant Invoice page - Card background not adapting
 - [x] Fix light mode display in tenant Payments page - Card background not adapting
 - [x] Add smooth page transition animations between routes
+
+## User Feedback
+- [x] Remove page transition animations - causing jittery effect
+- [x] Restore simple routing without Framer Motion
