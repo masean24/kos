@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Building2, CreditCard, FileText, Loader2, LogOut, Menu, X, AlertCircle } from "lucide-react";
+import { Building2, CreditCard, FileText, Loader2, LogOut, Menu, X, AlertCircle, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ export default function TenantDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const { data: invoices, isLoading: invoicesLoading } = trpc.invoice.list.useQuery(undefined, {
     enabled: !!user && user.role === "penghuni",
@@ -73,6 +75,14 @@ export default function TenantDashboard() {
                 <AlertCircle className="h-4 w-4 mr-2" />
                 Lapor Masalah
               </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleTheme}
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
               <Button variant="ghost" onClick={() => logoutMutation.mutate()}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -125,6 +135,14 @@ export default function TenantDashboard() {
               >
                 <AlertCircle className="h-4 w-4 mr-2" />
                 Lapor Masalah
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={toggleTheme}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </Button>
               <Button
                 variant="ghost"

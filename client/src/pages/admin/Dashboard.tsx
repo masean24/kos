@@ -2,7 +2,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Building2, Users, FileText, DollarSign, Loader2, AlertCircle, Bell, Menu, X } from "lucide-react";
+import { Building2, Users, FileText, DollarSign, Loader2, AlertCircle, Bell, Menu, X, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
@@ -11,6 +12,7 @@ export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
   });
@@ -81,6 +83,14 @@ export default function AdminDashboard() {
             <Button variant="outline" onClick={() => setLocation("/admin/invoices")}>
               Kelola Invoice
             </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
             <Button variant="outline" onClick={() => logout()}>
               Logout
             </Button>
@@ -135,6 +145,14 @@ export default function AdminDashboard() {
                 }}
               >
                 Kelola Invoice
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={toggleTheme}
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </Button>
               <Button 
                 variant="outline" 

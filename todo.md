@@ -151,3 +151,9 @@
 ## Critical Bugs (User Report)
 - [x] Fix text visibility on tenant dashboard - dark text on dark background
 - [x] Fix missing tenant data - invoices not loading properly
+
+## New Feature (User Request)
+- [x] Enable theme switching in App.tsx (make theme switchable)
+- [x] Add theme toggle button to admin dashboard header
+- [x] Add theme toggle button to tenant dashboard header
+- [x] Test dark/light mode switching
