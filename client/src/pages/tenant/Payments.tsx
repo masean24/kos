@@ -58,14 +58,14 @@ export default function TenantPayments() {
     }
   };
 
-  const handleUploadProof = async () => {
+  const handleUploadProof = () => {
     if (!proofFile || !selectedInvoice) return;
 
     setUploading(true);
-    try {
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+    // Convert file to base64
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
         const base64String = reader.result as string;
         
         // Save base64 to database
@@ -73,18 +73,18 @@ export default function TenantPayments() {
           invoiceId: selectedInvoice.id,
           proofUrl: base64String, // data:image/png;base64,iVBORw0KG...
         });
+      } catch (error) {
+        toast.error("Gagal upload bukti pembayaran");
+        console.error(error);
+      } finally {
         setUploading(false);
-      };
-      reader.onerror = () => {
-        toast.error("Gagal membaca file");
-        setUploading(false);
-      };
-      reader.readAsDataURL(proofFile);
-    } catch (error) {
-      toast.error("Gagal upload bukti pembayaran");
-      console.error(error);
+      }
+    };
+    reader.onerror = () => {
+      toast.error("Gagal membaca file");
       setUploading(false);
-    }
+    };
+    reader.readAsDataURL(proofFile);
   };
 
   const getStatusBadge = (inv: any) => {

@@ -97,3 +97,7 @@
 - [x] Add notification badge in admin dashboard for pending manual payments
 - [x] Add notification badge in admin dashboard for new maintenance reports
 - [x] Show notification count in admin header
+
+## Critical Bug Fix
+- [x] Fix upload loading issue - mutation not completing properly
+- [x] Document OAuth alternatives for VPS deployment (custom login system)
