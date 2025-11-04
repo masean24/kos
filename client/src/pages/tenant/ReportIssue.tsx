@@ -113,7 +113,7 @@ export default function ReportIssue() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="judul">Judul Masalah</Label>
               <Input
                 id="judul"
@@ -122,7 +122,7 @@ export default function ReportIssue() {
                 placeholder="Contoh: AC tidak dingin"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="deskripsi">Deskripsi Detail</Label>
               <Textarea
                 id="deskripsi"
@@ -132,7 +132,7 @@ export default function ReportIssue() {
                 rows={5}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="prioritas">Prioritas</Label>
               <Select value={prioritas} onValueChange={(v: any) => setPrioritas(v)}>
                 <SelectTrigger>

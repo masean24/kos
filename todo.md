@@ -166,3 +166,7 @@
 ## User Feedback
 - [x] Remove page transition animations - causing jittery effect
 - [x] Restore simple routing without Framer Motion
+
+## UI Fix (User Report)
+- [x] Fix spacing in report form - labels too close to input boxes
+- [x] Add proper margin between form labels and inputs
