@@ -18,6 +18,7 @@ export default function PaymentStatus() {
   const [, setLocation] = useLocation();
   const [rejectInvoiceId, setRejectInvoiceId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
 
   const utils = trpc.useUtils();
   const { data: invoices, isLoading } = trpc.invoice.list.useQuery(undefined, {
@@ -107,8 +108,8 @@ export default function PaymentStatus() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Status Pembayaran</h1>
-              <p className="text-sm text-muted-foreground">Monitor pembayaran semua penghuni</p>
+              <h1 className="text-2xl font-bold text-foreground">Review Pembayaran Manual</h1>
+              <p className="text-sm text-muted-foreground">Setujui atau tolak bukti pembayaran dari penghuni</p>
             </div>
           </div>
         </div>
@@ -117,14 +118,65 @@ export default function PaymentStatus() {
       <main className="container py-8">
         <Card>
           <CardHeader>
-            <CardTitle>Daftar Pembayaran</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Daftar Pembayaran Manual</CardTitle>
+              <div className="flex gap-2">
+                <Button 
+                  variant={filter === 'pending' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setFilter('pending')}
+                >
+                  <Clock className="h-4 w-4 mr-1" />
+                  Menunggu Review
+                </Button>
+                <Button 
+                  variant={filter === 'approved' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setFilter('approved')}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Disetujui
+                </Button>
+                <Button 
+                  variant={filter === 'rejected' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setFilter('rejected')}
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Ditolak
+                </Button>
+                <Button 
+                  variant={filter === 'all' ? 'default' : 'outline'} 
+                  size="sm"
+                  onClick={() => setFilter('all')}
+                >
+                  Semua
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : invoices && invoices.length > 0 ? (
+            ) : invoices && invoices.length > 0 ? (() => {
+              const filteredInvoices = invoices.filter((inv: any) => {
+                if (filter === 'pending') return inv.paymentMethod === 'manual' && inv.approvalStatus === 'pending';
+                if (filter === 'approved') return inv.status === 'paid' && inv.paymentMethod === 'manual';
+                if (filter === 'rejected') return inv.approvalStatus === 'rejected';
+                return inv.paymentMethod === 'manual'; // all manual payments
+              });
+              
+              if (filteredInvoices.length === 0) {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Tidak ada pembayaran {filter === 'pending' ? 'yang menunggu review' : filter === 'approved' ? 'yang disetujui' : filter === 'rejected' ? 'yang ditolak' : ''}
+                  </div>
+                );
+              }
+              
+              return (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -138,7 +190,7 @@ export default function PaymentStatus() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((inv) => (
+                  {filteredInvoices.map((inv: any) => (
                     <TableRow key={inv.id}>
                       <TableCell className="font-medium">
                         {inv.tenantName || `User #${inv.userId}`}
@@ -193,7 +245,8 @@ export default function PaymentStatus() {
                   ))}
                 </TableBody>
               </Table>
-            ) : (
+              );
+            })() : (
               <div className="text-center py-8 text-muted-foreground">
                 Belum ada data pembayaran
               </div>

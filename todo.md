@@ -101,3 +101,10 @@
 ## Critical Bug Fix
 - [x] Fix upload loading issue - mutation not completing properly
 - [x] Document OAuth alternatives for VPS deployment (custom login system)
+
+## UI Restructuring (User Request)
+- [x] Separate "Riwayat Invoice" - show invoice status only (no payment actions)
+- [x] Create "Riwayat Pembayaran" page with 2 payment options (Xendit / Manual)
+- [x] Xendit payment auto-updates status to paid when completed
+- [x] Manual payment requires proof upload and admin approval
+- [x] Improve admin payment review dashboard clarity

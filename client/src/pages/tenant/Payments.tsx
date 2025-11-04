@@ -1,38 +1,53 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { trpc } from "@/lib/trpc";
-import { Loader2, ArrowLeft, Upload, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, CreditCard, Loader2, Upload, XCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-
 export default function TenantPayments() {
+  const [location, setLocation] = useLocation();
   const { user, loading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'xendit' | 'manual'>('xendit');
   const [uploading, setUploading] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
 
   const utils = trpc.useUtils();
   const { data: invoices, isLoading } = trpc.invoice.list.useQuery(undefined, {
-    enabled: !!user && user.role === "penghuni",
+    enabled: !!user && user.role === "user",
+  });
+
+  const createPaymentMutation = trpc.invoice.createPayment.useMutation({
+    onSuccess: (data) => {
+      if (data.success && data.paymentUrl) {
+        window.open(data.paymentUrl, "_blank");
+        toast.success("Redirect ke halaman pembayaran Xendit");
+        setSelectedInvoice(null);
+      } else {
+        toast.info(data.message || "Xendit belum dikonfigurasi");
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
   const uploadProofMutation = trpc.invoice.uploadPaymentProof.useMutation({
     onSuccess: () => {
-      utils.invoice.list.invalidate();
+      toast.success("Bukti pembayaran berhasil diupload");
       setSelectedInvoice(null);
       setProofFile(null);
-      toast.success("Bukti pembayaran berhasil diupload");
+      utils.invoice.list.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -42,14 +57,12 @@ export default function TenantPayments() {
   useEffect(() => {
     if (!authLoading && !user) {
       window.location.href = getLoginUrl();
-    } else if (!authLoading && user && user.role !== "penghuni") {
-      setLocation("/admin");
     }
-  }, [user, authLoading, setLocation]);
+  }, [user, authLoading]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast.error("Ukuran file maksimal 5MB");
         return;
@@ -58,53 +71,55 @@ export default function TenantPayments() {
     }
   };
 
-  const handleUploadProof = () => {
-    if (!proofFile || !selectedInvoice) return;
+  const handlePayment = () => {
+    if (!selectedInvoice) return;
 
-    setUploading(true);
-    // Convert file to base64
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        const base64String = reader.result as string;
-        
-        // Save base64 to database
-        await uploadProofMutation.mutateAsync({
-          invoiceId: selectedInvoice.id,
-          proofUrl: base64String, // data:image/png;base64,iVBORw0KG...
-        });
-      } catch (error) {
-        toast.error("Gagal upload bukti pembayaran");
-        console.error(error);
-      } finally {
-        setUploading(false);
+    if (paymentMethod === 'xendit') {
+      createPaymentMutation.mutate({ invoiceId: selectedInvoice.id });
+    } else if (paymentMethod === 'manual') {
+      if (!proofFile) {
+        toast.error("Pilih file bukti pembayaran");
+        return;
       }
-    };
-    reader.onerror = () => {
-      toast.error("Gagal membaca file");
-      setUploading(false);
-    };
-    reader.readAsDataURL(proofFile);
+
+      setUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64String = reader.result as string;
+          await uploadProofMutation.mutateAsync({
+            invoiceId: selectedInvoice.id,
+            proofUrl: base64String,
+          });
+        } catch (error: any) {
+          toast.error("Gagal upload bukti pembayaran");
+          console.error(error);
+        } finally {
+          setUploading(false);
+        }
+      };
+      reader.onerror = () => {
+        toast.error("Gagal membaca file");
+        setUploading(false);
+      };
+      reader.readAsDataURL(proofFile);
+    }
   };
 
   const getStatusBadge = (inv: any) => {
     if (inv.status === "paid") {
       return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Lunas</Badge>;
     }
-    
-    if (inv.paymentMethod === "manual") {
-      if (inv.approvalStatus === "pending") {
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Menunggu Verifikasi</Badge>;
-      }
-      if (inv.approvalStatus === "rejected") {
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Ditolak</Badge>;
-      }
+    if (inv.paymentMethod === "manual" && inv.approvalStatus === "pending") {
+      return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Menunggu Verifikasi</Badge>;
     }
-    
-    return <Badge variant="secondary">Belum Bayar</Badge>;
+    if (inv.paymentMethod === "manual" && inv.approvalStatus === "rejected") {
+      return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Ditolak</Badge>;
+    }
+    return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />Belum Bayar</Badge>;
   };
 
-  if (authLoading || !user || user.role !== "penghuni") {
+  if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -116,9 +131,9 @@ export default function TenantPayments() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container py-4">
-          <div className="flex items-center gap-4 mb-2">
-            <Button variant="ghost" size="sm" onClick={() => setLocation("/tenant")}>
-              <ArrowLeft className="h-4 w-4" />
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/tenant/dashboard")}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Riwayat Pembayaran</h1>
@@ -132,13 +147,18 @@ export default function TenantPayments() {
         <Card>
           <CardHeader>
             <CardTitle>Daftar Tagihan</CardTitle>
+            <CardDescription>Pilih invoice untuk melakukan pembayaran</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : invoices && invoices.length > 0 ? (
+            ) : !invoices || invoices.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Belum ada tagihan
+              </div>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -150,40 +170,33 @@ export default function TenantPayments() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((inv) => (
+                  {invoices.map((inv: any) => (
                     <TableRow key={inv.id}>
                       <TableCell className="font-medium">{inv.bulan}</TableCell>
-                      <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>
+                      <TableCell>Rp {inv.jumlah.toLocaleString("id-ID")}</TableCell>
                       <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
                       <TableCell>{getStatusBadge(inv)}</TableCell>
                       <TableCell className="text-right">
                         {inv.status === "pending" && (
-                          <>
-                            {inv.approvalStatus === "rejected" && inv.rejectionReason && (
-                              <div className="text-xs text-destructive mb-2">
-                                Alasan: {inv.rejectionReason}
-                              </div>
-                            )}
-                            {(!inv.paymentProof || inv.approvalStatus === "rejected") && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedInvoice(inv)}
-                              >
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload Bukti
-                              </Button>
-                            )}
-                            {inv.approvalStatus === "pending" && (
-                              <div className="text-xs text-muted-foreground">
-                                Menunggu verifikasi admin
-                              </div>
-                            )}
-                          </>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedInvoice(inv);
+                              setPaymentMethod('xendit');
+                              setProofFile(null);
+                            }}
+                          >
+                            Bayar
+                          </Button>
                         )}
                         {inv.status === "paid" && inv.tanggalDibayar && (
                           <div className="text-xs text-muted-foreground">
                             Dibayar: {new Date(inv.tanggalDibayar).toLocaleDateString("id-ID")}
+                          </div>
+                        )}
+                        {inv.approvalStatus === "rejected" && inv.rejectionReason && (
+                          <div className="text-xs text-destructive">
+                            Ditolak: {inv.rejectionReason}
                           </div>
                         )}
                       </TableCell>
@@ -191,63 +204,82 @@ export default function TenantPayments() {
                   ))}
                 </TableBody>
               </Table>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                Belum ada tagihan
-              </div>
             )}
           </CardContent>
         </Card>
+      </main>
 
-        {/* Upload Payment Proof Dialog */}
-        <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Upload Bukti Pembayaran</DialogTitle>
-              <DialogDescription>
-                Upload bukti transfer untuk invoice bulan {selectedInvoice?.bulan}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <Alert>
-                <AlertDescription>
-                  <div className="font-medium mb-2">Jumlah yang harus dibayar:</div>
-                  <div className="text-2xl font-bold">
-                    Rp {selectedInvoice?.jumlahTagihan.toLocaleString("id-ID")}
+      {/* Payment Dialog */}
+      <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Pilih Metode Pembayaran</DialogTitle>
+            <DialogDescription>
+              Invoice bulan {selectedInvoice?.bulan} - Rp {selectedInvoice?.jumlah.toLocaleString("id-ID")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'xendit' | 'manual')}>
+              <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-accent" onClick={() => setPaymentMethod('xendit')}>
+                <RadioGroupItem value="xendit" id="xendit" />
+                <Label htmlFor="xendit" className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    <div>
+                      <div className="font-semibold">Bayar via Xendit</div>
+                      <div className="text-xs text-muted-foreground">Transfer bank, e-wallet, QRIS</div>
+                    </div>
                   </div>
-                </AlertDescription>
-              </Alert>
+                </Label>
+              </div>
 
-              <div>
+              <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-accent" onClick={() => setPaymentMethod('manual')}>
+                <RadioGroupItem value="manual" id="manual" />
+                <Label htmlFor="manual" className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    <div>
+                      <div className="font-semibold">Upload Bukti Transfer</div>
+                      <div className="text-xs text-muted-foreground">Transfer manual + upload bukti</div>
+                    </div>
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+
+            {paymentMethod === 'manual' && (
+              <div className="space-y-2">
                 <Label htmlFor="proof">Bukti Pembayaran (JPG, PNG, PDF - Max 5MB)</Label>
                 <Input
                   id="proof"
                   type="file"
                   accept="image/*,application/pdf"
                   onChange={handleFileChange}
-                  disabled={uploading}
                 />
                 {proofFile && (
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="text-sm text-muted-foreground">
                     File: {proofFile.name} ({(proofFile.size / 1024).toFixed(2)} KB)
                   </p>
                 )}
               </div>
-            </div>
+            )}
+          </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSelectedInvoice(null)} disabled={uploading}>
-                Batal
-              </Button>
-              <Button onClick={handleUploadProof} disabled={!proofFile || uploading}>
-                {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Upload
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </main>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedInvoice(null)}>
+              Batal
+            </Button>
+            <Button 
+              onClick={handlePayment}
+              disabled={uploading || createPaymentMutation.isPending || (paymentMethod === 'manual' && !proofFile)}
+            >
+              {(uploading || createPaymentMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {paymentMethod === 'xendit' ? 'Lanjut ke Xendit' : 'Upload Bukti'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
