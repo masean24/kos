@@ -31,7 +31,8 @@ function Router() {
       <Route path="/admin/payments" component={PaymentStatus} />
       
       {/* Tenant Routes */}
-        <Route path="/tenant" component={TenantDashboard} />
+      <Route path="/tenant" component={TenantDashboard} />
+      <Route path="/tenant/dashboard" component={TenantDashboard} />
       <Route path="/tenant/register" component={TenantRegister} />
       <Route path="/tenant/report" component={TenantReportIssue} />
       <Route path="/tenant/invoices" component={TenantInvoices} />

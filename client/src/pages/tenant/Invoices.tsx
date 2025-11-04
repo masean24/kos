@@ -25,8 +25,11 @@ export default function TenantInvoices() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600">Memuat halaman...</p>
+        </div>
       </div>
     );
   }
@@ -87,8 +90,8 @@ export default function TenantInvoices() {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
-      <header className="border-b bg-card">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-y-auto">
+      <header className="border-b bg-white shadow-sm">
         <div className="container py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => setLocation("/tenant/dashboard")}>
@@ -103,15 +106,18 @@ export default function TenantInvoices() {
       </header>
 
       <main className="container py-8">
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow duration-300">
           <CardHeader>
             <CardTitle>Daftar Invoice</CardTitle>
             <CardDescription>Riwayat invoice pembayaran Anda</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Memuat invoice...</p>
+                </div>
               </div>
             ) : !invoices || invoices.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -129,8 +135,8 @@ export default function TenantInvoices() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((inv: any) => (
-                    <TableRow key={inv.id}>
+                  {invoices.map((inv: any, index: number) => (
+                    <TableRow key={inv.id} className="hover:bg-indigo-50/50 transition-colors duration-200 animate-in slide-in-from-left" style={{ animationDelay: `${index * 30}ms` }}>
                       <TableCell className="font-medium">{inv.bulan}</TableCell>
                       <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>
                       <TableCell>{getStatusBadge(inv)}</TableCell>
@@ -141,6 +147,7 @@ export default function TenantInvoices() {
                             variant="outline"
                             size="sm"
                             onClick={() => printInvoice(inv)}
+                            className="hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200"
                           >
                             <Printer className="h-4 w-4" />
                           </Button>
@@ -148,6 +155,7 @@ export default function TenantInvoices() {
                             <Button 
                               size="sm" 
                               onClick={() => setLocation(`/tenant/payments?invoice=${inv.id}`)}
+                              className="hover:shadow-md transition-all duration-200"
                             >
                               Bayar
                             </Button>

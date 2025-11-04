@@ -121,15 +121,18 @@ export default function TenantPayments() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600">Memuat halaman...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
-      <header className="border-b bg-card">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 overflow-y-auto">
+      <header className="border-b bg-white shadow-sm">
         <div className="container py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => setLocation("/tenant/dashboard")}>
@@ -144,15 +147,18 @@ export default function TenantPayments() {
       </header>
 
       <main className="container py-8">
-        <Card>
+        <Card className="hover:shadow-lg transition-shadow duration-300">
           <CardHeader>
             <CardTitle>Daftar Tagihan</CardTitle>
             <CardDescription>Pilih invoice untuk melakukan pembayaran</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex justify-center py-12">
+                <div className="text-center">
+                  <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Memuat tagihan...</p>
+                </div>
               </div>
             ) : !invoices || invoices.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -170,8 +176,8 @@ export default function TenantPayments() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((inv: any) => (
-                    <TableRow key={inv.id}>
+                  {invoices.map((inv: any, index: number) => (
+                    <TableRow key={inv.id} className="hover:bg-indigo-50/50 transition-colors duration-200 animate-in slide-in-from-left" style={{ animationDelay: `${index * 30}ms` }}>
                       <TableCell className="font-medium">{inv.bulan}</TableCell>
                       <TableCell>Rp {inv.jumlahTagihan.toLocaleString("id-ID")}</TableCell>
                       <TableCell>{new Date(inv.tanggalJatuhTempo).toLocaleDateString("id-ID")}</TableCell>
@@ -185,6 +191,7 @@ export default function TenantPayments() {
                               setPaymentMethod('xendit');
                               setProofFile(null);
                             }}
+                            className="hover:shadow-md transition-all duration-200"
                           >
                             Bayar
                           </Button>
@@ -221,7 +228,7 @@ export default function TenantPayments() {
 
           <div className="space-y-4 py-4">
             <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'xendit' | 'manual')}>
-              <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-accent" onClick={() => setPaymentMethod('xendit')}>
+              <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200" onClick={() => setPaymentMethod('xendit')}>
                 <RadioGroupItem value="xendit" id="xendit" />
                 <Label htmlFor="xendit" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
@@ -234,7 +241,7 @@ export default function TenantPayments() {
                 </Label>
               </div>
 
-              <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-accent" onClick={() => setPaymentMethod('manual')}>
+              <div className="flex items-center space-x-2 border rounded-lg p-4 cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-all duration-200" onClick={() => setPaymentMethod('manual')}>
                 <RadioGroupItem value="manual" id="manual" />
                 <Label htmlFor="manual" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
